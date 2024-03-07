@@ -31,10 +31,11 @@ export async function requestToken(options) {
 }
 
 // Method to get list of medicines in JSON format
+// TODO: unescaped characters can't be taken in, must be parsed
 export async function requestList(token, search) {
     const option2 = {
         host: "backend-prod.medicines.ie",
-        path: `/api/v1/medicines?published=true&expand=company%2Cingredients%2CactiveSPC%2Cpils.activePil%2CotherDocs.activeDoc%2CadditionalComs.activeCom&page=1&per-page=25&query=${search}`,
+        path: `/api/v1/medicines?published=true&expand=company%2Cingredients%2CactiveSPC%2Cpils.activePil%2CotherDocs.activeDoc%2CadditionalComs.activeCom&page=1&per-page=25&query=${encodeURIComponent(search)}`,
         headers: {
             accept: "application/json",
             authorization: `Bearer ${token}`,

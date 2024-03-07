@@ -75,7 +75,7 @@ export async function autoComplete(input) {
     
     const option = {
         host: "go.drugbank.com",
-        path: `/interaction_concept_search?term=${input}&_type=query&q=${input}`,
+        path: `/interaction_concept_search?term=${encodeURIComponent(input)}&_type=query&q=${encodeURIComponent(input)}`,
         headers: {
             accept: "*/*",
             accept_language: "en-US,en;q=0.9",
