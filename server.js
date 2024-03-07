@@ -13,6 +13,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Endpoint for Vercel
+app.get("/", (req, res) => res.send("Express on Vercel"));
+
 // Endpoint for testing
 app.get('/message', (req, res) => {
     res.json({ message: 'Hello from server!' });
