@@ -51,9 +51,8 @@ router.get('/grabCache', async (req, res) => {
                 doc: document
             }
 
-            // TODO: try catch for any files above limit
-            // this has been modified, need to find a med 
-            // that has an above limit pdf
+
+            // Sample medicine: PIL for Panadol ActiFast 500mg Soluble Tablets
             try {
                 await firestore.collection(collectionName).doc(documentID).set(data);
                 
@@ -66,8 +65,11 @@ router.get('/grabCache', async (req, res) => {
 
             } catch (error) {
                 console.error("An error occurred:", error);
-              
-                // TODO: Fix this
+
+            } finally {
+                // If document is above limit
+                // Not cached
+                // Send it directly to client
                 res.type('application/pdf').send(data); 
             }
         }
