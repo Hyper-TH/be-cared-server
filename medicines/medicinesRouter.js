@@ -67,6 +67,7 @@ router.get('/grabCache', async (req, res) => {
                 console.error("An error occurred:", error);
 
             } finally {
+                // TODO: NOT WORKING
                 // If document is above limit
                 // Not cached
                 // Send it directly to client

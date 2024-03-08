@@ -7,6 +7,9 @@ const router = express.Router();
 
 // Endpoint to get search results of products
 router.get('/getProds', async (req, res) => {
+
+    console.log(`Received request ${req}`);
+
     try {
         const { prodQuery, searchType } = req.query;
 
@@ -14,8 +17,14 @@ router.get('/getProds', async (req, res) => {
             return res.status(400).json({ error: 'Product is required '});
         } else {
             const cookie = await requestCookie();
+            console.log(`Cookie :${cookie}`);
+
             const prodsList = await requestList(cookie, prodQuery, searchType);
+            console.log(`List :${prodsList}`);
+
             const prodsData = await productListParser(prodsList, searchType);
+            console.log(`Data :${prodsData}`);
+
 
             // console.log(prodsData);
 
