@@ -47,6 +47,10 @@ export async function requestList(cookie, prodQuery, type) {
         https.get(option, (response) => {
 			console.log(response.statusCode); // Logs the HTTP status code
             
+			if (response.statusCode === 302) {
+				console.log(response);
+			};
+
 			let result = '';
 
             response.on('data', function (chunk) {
