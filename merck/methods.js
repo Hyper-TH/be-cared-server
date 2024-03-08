@@ -3,7 +3,7 @@ import fs from 'fs';	// For testing purposes only
 
 // Method to get cookie
 export async function requestCookie() {
-	const response = await fetch("https://www.sigmaaldrich.com/IE/en/search/t1503?focus=products&page=1&perpage=30&sort=relevance&term=t1503&type=product_number");
+	const response = await fetch("https://www.sigmaaldrich.com/US/en/search/t1503?focus=products&page=1&perpage=30&sort=relevance&term=t1503&type=product_number");
 	const cookie = response.headers.get('set-cookie');
 
 	if (cookie) {
@@ -21,7 +21,7 @@ export async function requestList(cookie, prodQuery, type) {
 	// Turn to all lower case for first instance of the prodQuery
     const option = {
         host: "www.sigmaaldrich.com",
-        path: `/IE/en/search/${prodQuery.toLowerCase()}?focus=products&page=1&perpage=30&sort=relevance&term=${encodeURIComponent(prodQuery)}&type=product_${type}`,
+        path: `/US/en/search/${prodQuery.toLowerCase()}?focus=products&page=1&perpage=30&sort=relevance&term=${encodeURIComponent(prodQuery)}&type=product_${type}`,
         headers: {
             accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
 			accept_language: "en-US,en;q=0.9",
