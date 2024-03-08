@@ -83,8 +83,7 @@ router.get('/grabCache', async (req, res) => {
 
 // Endpoint to subscribe the medicine
 router.get('/subscribe', async (req, res) => {
-    const { user, name, activeIngredient, company, pil, spc } = req.query
-
+    const { user, name, activeIngredient, company, pil, spc } = req.query;
     const collectionName = "users";
 
     const data = {
@@ -115,6 +114,42 @@ router.get('/subscribe', async (req, res) => {
         
     } catch (error) {
         console.error("An error occured: ", error);
+    }
+});
+
+// Endpoint to check if user has subscribed to the medicine
+router.get('/checkSub', async (req, res) => {
+    const { user, name } = req.query;
+    const collectionName = "users";
+
+    try {
+        // Fetch the current user's document to check existing medicines
+        const userDoc = await firestore.collection(collectionName).doc(user).get();
+
+        if (!userDoc.exists) {
+            console.error("User document does not exist.");
+            return res.status(404).send("User not found.");
+        }
+
+        const userData = userDoc.data();
+        const existingMedicines = userData.medicines || [];
+        
+        // Check if the medicine with the given name already exists
+        const medicineExists = existingMedicines.some(medicine => medicine.name === name);
+        
+        if (medicineExists) {
+            console.log("Medicine with the given name already exists.");
+
+            return res.json({ exists: true, message: "Medicine already exists in the user's medicines array." });
+        } else {
+            console.log("Medicine with the given name does not exist.");
+
+            return res.json({ exists: false, message: "Medicine does not exist in the user's medicines array." });
+        }
+        
+    } catch (error) {
+        console.error("An error occurred: ", error);
+        return res.status(500).send("An error occurred while processing your request.");
     }
 });
 
