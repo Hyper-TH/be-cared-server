@@ -1,4 +1,5 @@
 import express from 'express';
+import admin from 'firebase-admin';
 import { firestore } from '../config/config.js';
 import { tokenOptions } from './tokenOptions.js';
 import { requestToken, requestList, requestDocument } from './methods.js'
@@ -77,6 +78,43 @@ router.get('/grabCache', async (req, res) => {
 
     } catch (error) {
       console.error(`Error fetching data: ${error}`);
+    }
+});
+
+// Endpoint to subscribe the medicine
+router.get('/subscribe', async (req, res) => {
+    const { user, name, activeIngredient, company, pil, spc } = req.query
+
+    const collectionName = "users";
+
+    const data = {
+        activeIngredient: activeIngredient,
+        company: company,
+        name: name,
+        pil: pil,
+        spc: spc
+    };
+    
+    console.log(`Pushing to server now...`);
+
+    try {
+
+        // Push new medicine object into 'medicines' array field of the user document
+        await firestore.collection(collectionName).doc(user).update({
+            medicines: admin.firestore.FieldValue.arrayUnion(data)
+        });
+        
+        console.log("Medicine added to the user's medicines array!");
+
+        // Optionally, fetch the updated document to confirm or send back the updated array
+        let documentSnapshot = await firestore.collection(collectionName).doc(user).get();
+        const documentData = documentSnapshot.data();
+        
+        // Responding with the updated medicines array
+        res.json({ medicines: documentData.medicines });
+        
+    } catch (error) {
+        console.error("An error occured: ", error);
     }
 });
 

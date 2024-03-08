@@ -31,7 +31,6 @@ export async function requestToken(options) {
 }
 
 // Method to get list of medicines in JSON format
-// TODO: unescaped characters can't be taken in, must be parsed
 export async function requestList(token, search) {
     const option2 = {
         host: "backend-prod.medicines.ie",
@@ -72,7 +71,7 @@ export async function requestList(token, search) {
     });
 };
 
-// Function to request SPC/PIL
+// Method to request SPC/PIL
 export async function requestDocument(token, uploadPath) {
 
     console.log("Upload path: ", uploadPath);
@@ -130,4 +129,3 @@ export async function requestDocument(token, uploadPath) {
         });
     });
 };
-
