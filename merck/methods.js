@@ -48,7 +48,7 @@ export async function requestList(cookie, prodQuery, type) {
 			console.log(response.statusCode); // Logs the HTTP status code
             
 			if (response.statusCode === 302) {
-				console.log(`\nheaders:\n ${response}`);
+				console.log('\nHeaders:\n', response);
 			};
 
 			let result = '';
