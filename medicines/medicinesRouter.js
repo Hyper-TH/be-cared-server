@@ -66,6 +66,7 @@ router.get('/grabCache', async (req, res) => {
             } catch (error) {
                 console.error("An error occurred:", error);
                 
+                // Not sending properly!
                 res.type('application/pdf').send(data);
             } 
         }

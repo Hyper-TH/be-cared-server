@@ -94,7 +94,7 @@ export async function requestDocument(token, uploadPath) {
             
             // This should keep going until no more data coming in
             response.on('data', (chunk) => { 
-                console.log("Pushed", chunk);
+                // console.log("Pushed", chunk);
 
                 pdfChunks.push(chunk);
             });
