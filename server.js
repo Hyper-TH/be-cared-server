@@ -60,6 +60,44 @@ app.get('/login', async (req, res) => {
     }
 });
 
+// Endpoint to sign up user into the db
+app.get('/signUp', async (req, res) => {
+    console.log("Entered endpoint");
+    const collectionName = "users"; 
+
+    try {
+        console.log("Entered try");
+
+        const usersCollectionRef = collection(db, "users");
+
+        // const { user } = req.query;
+        
+        // console.log(user);
+
+        // try {
+        //     console.log(`Adding to user database: ${user} with type: ${type}`);
+
+        //     const data = {
+        //         medicines: [],
+        //         type: type,
+        //     };
+              
+        //     let documentSnapshot = await firestore.collection(collectionName).doc(user).set(data);
+
+        //     if (documentSnapshot) {
+        //         res.status(200).json({ message: 'Success!' });
+        //     }
+
+        // } catch (error) {
+        //     console.error(`Error: ${error}`);
+        // }
+
+
+    } catch (error) {
+        console.error(`Error: ${error}`);
+    }
+});
+
 app.use(drugbankRouter);
 app.use(medicinesRouter);
 app.use(productsRouter);
