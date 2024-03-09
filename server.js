@@ -57,7 +57,7 @@ app.get('/login', async (req, res) => {
             }
 
             // Add the new user to the 'users' collection with 'user' as the document ID
-            await setDoc(doc(db, "users", user), data);
+            await db.collection("users").doc(user).set(data);
 
             // Fetch the user again 
             filteredData = data.docs.map((doc) => ({
