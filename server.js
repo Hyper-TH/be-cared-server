@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import admin from 'firebase-admin';
 import { db } from './config/config.js';
-import { getDocs, collection } from 'firebase/firestore';
+import { setDoc, getDocs, collection } from 'firebase/firestore';
 import medicinesRouter from './medicines/medicinesRouter.js';
 import drugbankRouter from './drugbank/drugbankRouter.js';
 import productsRouter from './merck/productsRouter.js';
@@ -46,7 +46,7 @@ app.get('/login', async (req, res) => {
         .filter((users) => users.id === user);  // Filter the data to only include the user matching the provided 'user' query parameter
         
         console.log(filteredData);
-        
+
         // TODO: VERIFICATION HERE THAT USER HAS A DEDICATED FIRESTORE
         // Check if user does not exist in the users collection
         if (filteredData.length === 0) {
