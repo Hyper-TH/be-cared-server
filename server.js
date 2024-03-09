@@ -68,30 +68,25 @@ app.get('/signUp', async (req, res) => {
 
     try {
         console.log("Entered try");
+        const { user, type } = req.query;
+    
+        try {
+            console.log(`Adding to user database: ${user} with type: ${type}`);
 
-        const usersCollectionRef = collection(db, "users");
-
-        // const { user } = req.query;
-        
-        // console.log(user);
-
-        // try {
-        //     console.log(`Adding to user database: ${user} with type: ${type}`);
-
-        //     const data = {
-        //         medicines: [],
-        //         type: type,
-        //     };
+            const data = {
+                medicines: [],
+                type: type,
+            };
               
-        //     let documentSnapshot = await firestore.collection(collectionName).doc(user).set(data);
+            let documentSnapshot = await firestore.collection(collectionName).doc(user).set(data);
 
-        //     if (documentSnapshot) {
-        //         res.status(200).json({ message: 'Success!' });
-        //     }
+            if (documentSnapshot) {
+                res.status(200).json({ message: 'Success!' });
+            }
 
-        // } catch (error) {
-        //     console.error(`Error: ${error}`);
-        // }
+        } catch (error) {
+            console.error(`Error: ${error}`);
+        }
 
 
     } catch (error) {
