@@ -28,6 +28,7 @@ app.listen(8000, () => {
 
 // Endpoint to get user authentications
 app.get('/login', async (req, res) => {
+    console.log("Entered endpoint /login");
     try {
         const usersCollectionRef = collection(db, "users");
         const { token } = req.headers; 
@@ -62,7 +63,7 @@ app.get('/login', async (req, res) => {
 
 // Endpoint to sign up user into the db
 app.get('/signUp', async (req, res) => {
-    console.log("Entered endpoint");
+    console.log("Entered endpoint /signup");
     const collectionName = "users"; 
 
     try {
