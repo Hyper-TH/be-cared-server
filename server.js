@@ -32,7 +32,7 @@ app.get('/login', async (req, res) => {
     try {
         const usersCollectionRef = collection(db, "users");
         const { token } = req.headers; 
-        const { user, uid, type } = req.query;
+        const { user, uid } = req.query;
 
         // Fetch all documents from the 'users' collection
         const data = await getDocs(usersCollectionRef);
@@ -53,7 +53,7 @@ app.get('/login', async (req, res) => {
             console.log(`User is not in the database`);
             const data = {
                 medicines: [],
-                type: type
+                type: "standard"
             }
 
             // Add the new user to the 'users' collection with 'user' as the document ID
