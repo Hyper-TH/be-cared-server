@@ -2,8 +2,9 @@ import https from 'https';
 import fs from 'fs';	// For testing purposes only
 
 // Method to get cookie
+// TODO: Note the /IE/en path, might need to change again to /US/en in deployment (take note env variables for this)
 export async function requestCookie() {
-	const response = await fetch("https://www.sigmaaldrich.com/US/en/search/t1503?focus=products&page=1&perpage=30&sort=relevance&term=t1503&type=product_number");
+	const response = await fetch("https://www.sigmaaldrich.com/IE/en/search/t1503?focus=products&page=1&perpage=30&sort=relevance&term=t1503&type=product_number");
 	const cookie = response.headers.get('set-cookie');
 
 	if (cookie) {
@@ -15,13 +16,13 @@ export async function requestCookie() {
 
 // Method to get list of products
 export async function requestList(cookie, prodQuery, type) {
-	console.log(`Query: ${prodQuery}`);
+	console.log(`Query: ${encodeURIComponent(prodQuery)}`);
 	console.log(`Type: ${type}`);
 
-	// Turn to all lower case for first instance of the prodQuery
+	// Turn to all lower case and replace space with '-' for first instance of the prodQuery
     const option = {
         host: "www.sigmaaldrich.com",
-        path: `/US/en/search/${encodeURIComponent(prodQuery.toLowerCase())}?focus=products&page=1&perpage=30&sort=relevance&term=${encodeURIComponent(prodQuery)}&type=product_${type}`,
+        path: `/IE/en/search/${encodeURIComponent((prodQuery.toLowerCase()).replace(/ /g, '-'))}?focus=products&page=1&perpage=30&sort=relevance&term=${encodeURIComponent(prodQuery)}&type=product_${type}`,
         headers: {
             accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
 			accept_language: "en-US,en;q=0.9",
@@ -35,7 +36,7 @@ export async function requestList(cookie, prodQuery, type) {
 			service_worker_navigation_preload: "true",
 			upgrade_insecure_requests: "1",
 			cookie: `${cookie}`,
-			Referer: "https://www.sigmaaldrich.com/US/en/search",
+			Referer: "https://www.sigmaaldrich.com/IE/en/search",
 			ReferrerPolicy: "strict-origin-when-cross-origin",
         },
 		method: "GET",

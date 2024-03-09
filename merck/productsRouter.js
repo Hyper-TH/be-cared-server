@@ -17,16 +17,8 @@ router.get('/getProds', async (req, res) => {
             return res.status(400).json({ error: 'Product is required '});
         } else {
             const cookie = await requestCookie();
-            console.log(`Cookie :${cookie}`);
-
             const prodsList = await requestList(cookie, prodQuery, searchType);
-            console.log(`List :${prodsList}`);
-
             const prodsData = await productListParser(prodsList, searchType);
-            console.log(`Data :${prodsData}`);
-
-
-            // console.log(prodsData);
 
             // Assuming requestList returns an array of drugs
             res.json({ products: prodsData });
