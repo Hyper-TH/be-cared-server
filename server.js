@@ -34,14 +34,42 @@ app.get('/login', async (req, res) => {
         const { token } = req.headers; 
         const { user, uid } = req.query;
 
+        // Fetch all documents from the 'users' collection
         const data = await getDocs(usersCollectionRef);
-        const filteredData = data.docs.map((doc) => ({
-            ...doc.data(),
-            id: doc.id,
+
+        // Map over each document, converting it to a JavaScript object
+        // and adding the document ID as a field
+        let filteredData = data.docs.map((doc) => ({
+            ...doc.data(),  // Spread operator to include all document fields
+            id: doc.id,     // Add the document ID as an 'id' field
         }))
-        .filter((users) => users.id === user);
+        .filter((users) => users.id === user);  // Filter the data to only include the user matching the provided 'user' query parameter
             
+        // TODO: VERIFICATION HERE THAT USER HAS A DEDICATED FIRESTORE
+        // Check if user does not exist in the users collection
+        if (filteredData.length === 0) {
+
+            const data = {
+                medicines: [],
+                type: "standard"
+            }
+
+            // Add the new user to the 'users' collection with 'user' as the document ID
+            await setDoc(doc(db, "users", user), data);
+
+            // Fetch the user again 
+            filteredData = data.docs.map((doc) => ({
+                ...doc.data(),  // Spread operator to include all document fields
+                id: doc.id,     // Add the document ID as an 'id' field
+            }))
+            .filter((users) => users.id === user);  // Filter the data to only include the user matching the provided 'user' query parameter
+            
+            console.log("User added to the users collection");
+        }
+
+        // Attempt to verify the token using Firebase Admin SDK
         try {
+            // Check if the UID from the verified token matches the provided 'uid' query parameter
             const authUser = await admin.auth().verifyIdToken(token);
 
             if (authUser.uid != uid) {
@@ -53,41 +81,8 @@ app.get('/login', async (req, res) => {
             return res.sendStatus(401);
         }
 
-        // Send type of user back to AuthContext.js
+        // If verification is successful, respond with the user type of the first matched document
         res.json({ message: filteredData[0].type});
-
-    } catch (error) {
-        console.error(`Error: ${error}`);
-    }
-});
-
-// Endpoint to sign up user into the db
-app.get('/signUp', async (req, res) => {
-    console.log("Entered endpoint /signup");
-    const collectionName = "users"; 
-
-    try {
-        console.log("Entered try");
-        const { user, type } = req.query;
-    
-        try {
-            console.log(`Adding to user database: ${user} with type: ${type}`);
-
-            const data = {
-                medicines: [],
-                type: type,
-            };
-              
-            let documentSnapshot = await firestore.collection(collectionName).doc(user).set(data);
-
-            if (documentSnapshot) {
-                res.status(200).json({ message: 'Success!' });
-            }
-
-        } catch (error) {
-            console.error(`Error: ${error}`);
-        }
-
 
     } catch (error) {
         console.error(`Error: ${error}`);
