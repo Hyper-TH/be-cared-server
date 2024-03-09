@@ -44,11 +44,13 @@ app.get('/login', async (req, res) => {
             id: doc.id,     // Add the document ID as an 'id' field
         }))
         .filter((users) => users.id === user);  // Filter the data to only include the user matching the provided 'user' query parameter
-            
+        
+        console.log(filteredData);
+        
         // TODO: VERIFICATION HERE THAT USER HAS A DEDICATED FIRESTORE
         // Check if user does not exist in the users collection
         if (filteredData.length === 0) {
-
+            console.log(`User is not in the database`);
             const data = {
                 medicines: [],
                 type: type
@@ -65,20 +67,22 @@ app.get('/login', async (req, res) => {
             .filter((users) => users.id === user);  // Filter the data to only include the user matching the provided 'user' query parameter
             
             console.log("User added to the users collection");
-        }
+        } else {
 
-        // Attempt to verify the token using Firebase Admin SDK
-        try {
-            // Check if the UID from the verified token matches the provided 'uid' query parameter
-            const authUser = await admin.auth().verifyIdToken(token);
+            // Attempt to verify the token using Firebase Admin SDK
+            try {
+                // Check if the UID from the verified token matches the provided 'uid' query parameter
+                const authUser = await admin.auth().verifyIdToken(token);
 
-            if (authUser.uid != uid) {
-                return res.sendStatus(403);
+                if (authUser.uid != uid) {
+                    console.log(`403: UIDs don't match`);
+                    return res.sendStatus(403); 
+                }
+
+            } catch (error) {
+                console.log("Unverified Token");
+                return res.sendStatus(401);
             }
-
-        } catch (error) {
-            console.log("Unverified Token");
-            return res.sendStatus(401);
         }
 
         // If verification is successful, respond with the user type of the first matched document
