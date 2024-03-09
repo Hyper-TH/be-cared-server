@@ -150,7 +150,7 @@ router.get('/checkSub', async (req, res) => {
 
 // Endpoint to get list of subscribed medicines
 router.get('/getSubs', async (req, res) => {
-    const { user } = req.query; // Removed 'name' as it's not used in this snippet
+    const { user } = req.query; 
     const collectionName = "users";
 
     try {
@@ -166,10 +166,52 @@ router.get('/getSubs', async (req, res) => {
 
         // Check if the medicines array exists in the document to avoid undefined errors
         if (documentData.medicines) {
-            console.log(`Got list!`);
+            console.log(`Got subbed medicine list!`);
 
             // Responding with the subscribed medicines array
             res.json({ medicines: documentData.medicines });
+        } else {
+            // If the medicines array does not exist, respond with an empty array
+            res.json({ medicines: [] });
+        }
+                
+        
+    } catch (error) {
+        console.error("An error occurred: ", error);
+        return res.status(500).send("An error occurred while processing your request.");
+    }
+});
+
+// Endpoint to unsub the medicine 
+router.get('/unSub', async (req, res) => {
+    const { user, medicineName } = req.query; 
+    const collectionName = "users";
+
+    try {
+        // Fetch the current user's document to check existing medicines
+        const userDoc = await firestore.collection(collectionName).doc(user).get();
+
+        if (!userDoc.exists) {
+            console.error("User document does not exist.");
+            return res.status(404).send("User not found.");
+        }
+
+        const documentData = userDoc.data();
+
+        // Check if the medicines array exists in the document to avoid undefined errors
+        if (documentData.medicines) {
+
+            // Filter the array to exclude the medicine with the specified name
+            const updatedMedicines = documentData.medicines.filter(medicine => medicine.name !== medicineName);
+
+            // Update the document with the filtered medicines array
+            await firestore.collection(collectionName).doc(user).update({
+                medicines: updatedMedicines
+            });
+            
+            // Responding with the new medicines array
+            res.json({ medicines: updatedMedicines });
+
         } else {
             // If the medicines array does not exist, respond with an empty array
             res.json({ medicines: [] });
@@ -180,6 +222,5 @@ router.get('/getSubs', async (req, res) => {
         return res.status(500).send("An error occurred while processing your request.");
     }
 });
-
 
 export default router;
