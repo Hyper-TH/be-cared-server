@@ -32,7 +32,7 @@ app.get('/login', async (req, res) => {
     try {
         const usersCollectionRef = collection(db, "users");
         const { token } = req.headers; 
-        const { user, uid } = req.query;
+        const { user, uid, type } = req.query;
 
         // Fetch all documents from the 'users' collection
         const data = await getDocs(usersCollectionRef);
@@ -51,7 +51,7 @@ app.get('/login', async (req, res) => {
 
             const data = {
                 medicines: [],
-                type: "standard"
+                type: type
             }
 
             // Add the new user to the 'users' collection with 'user' as the document ID
