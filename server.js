@@ -1,8 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import admin from 'firebase-admin';
-import { db } from './config/config.js';
-import { setDoc, getDocs, collection } from 'firebase/firestore';
+import { firestore, db } from './config/config.js';
+import { getDocs, collection } from 'firebase/firestore';
 import medicinesRouter from './medicines/medicinesRouter.js';
 import drugbankRouter from './drugbank/drugbankRouter.js';
 import productsRouter from './merck/productsRouter.js';
@@ -57,7 +57,7 @@ app.get('/login', async (req, res) => {
             }
 
             // Add the new user to the 'users' collection with 'user' as the document ID
-            await db.collection("users").doc(user).set(data);
+            await firestore.collection("users").doc(user).set(data);
 
             // Fetch the user again 
             filteredData = data.docs.map((doc) => ({
