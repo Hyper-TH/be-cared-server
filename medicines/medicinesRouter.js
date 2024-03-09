@@ -52,7 +52,6 @@ router.get('/grabCache', async (req, res) => {
                 doc: document
             }
 
-
             // Sample medicine: PIL for Panadol ActiFast 500mg Soluble Tablets
             try {
                 await firestore.collection(collectionName).doc(documentID).set(data);
@@ -66,16 +65,9 @@ router.get('/grabCache', async (req, res) => {
 
             } catch (error) {
                 console.error("An error occurred:", error);
-
-            } finally {
-                // TODO: NOT WORKING
-                // If document is above limit
-                // Not cached
-                // Send it directly to client
-                // UPDATE: I think it's working? 
-                // it just takes a while to send it?
-                res.type('application/pdf').send(data); 
-            }
+                
+                res.type('application/pdf').send(data);
+            } 
         }
 
     } catch (error) {
