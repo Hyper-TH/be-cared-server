@@ -47,7 +47,6 @@ app.get('/login', async (req, res) => {
         
         console.log(filteredData);
 
-        // TODO: VERIFICATION HERE THAT USER HAS A DEDICATED FIRESTORE
         // Check if user does not exist in the users collection
         if (filteredData.length === 0) {
             console.log(`User is not in the database`);
