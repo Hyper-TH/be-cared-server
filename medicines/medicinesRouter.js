@@ -72,6 +72,8 @@ router.get('/grabCache', async (req, res) => {
                 // If document is above limit
                 // Not cached
                 // Send it directly to client
+                // UPDATE: I think it's working? 
+                // it just takes a while to send it?
                 res.type('application/pdf').send(data); 
             }
         }
