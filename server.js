@@ -6,7 +6,7 @@ import { getDocs, collection } from 'firebase/firestore';
 import medicinesRouter from './medicines/medicinesRouter.js';
 import drugbankRouter from './drugbank/drugbankRouter.js';
 import productsRouter from './merck/productsRouter.js';
-import cacheRouter from './weeklyCache/cacheRouter.js';
+import cacheRouter from './medicines/weeklyCache/cacheRouter.js';
 
 // Create Express application
 const app = express();
