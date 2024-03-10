@@ -100,7 +100,7 @@ const weeklyCache = async () => {
     
 };  
 
-const job = cron.schedule('0 12 * * *', myScheduledMethod, {
+const job = cron.schedule('0 12 * * *', weeklyCache, {
     scheduled: true,
     timezone: "Europe/London"
 });
