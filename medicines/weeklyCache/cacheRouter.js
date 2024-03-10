@@ -76,6 +76,58 @@ const weeklyCache = async () => {
                 // Compare the two documents using Buffer.compare
                 const isEqual = Buffer.compare(newDocumentBuffer, cachedDocumentBuffer) === 0;
 
+                /*
+                    TODO: First grab the name of the medicine and execute a requestList() 
+                    and take the first instance (i.e., response[0]) then take these:
+                    name: medicine.name
+                    id: medicine.id
+                    pil: encodeURIComponent(medicine.pils[0].activePil.file.name),
+                    spc: encodeURIComponent(medicine.activeSPC.file.name)
+                    
+                    This requires implementing a new collection called medicines and has this structure:
+                    id: 1321 = {
+                        name: name,
+                        pil_path,
+                        spc_path,
+
+                    }
+
+                    The collection users will also be changed:
+                    user: test2@123.com = {
+                        medicines : [
+                            0: { 
+                                activeIngredient,
+                                company,
+                                name,
+                                pil_path, 
+                                spc_path,
+                                id
+                            }
+                        ],
+                        type: "standard"
+                    }
+                    
+                    The files collection remains the same.
+
+                    PDFRenderPage will also change its logic. It will now pass the medicine.id 
+                    and the corresponding paths. Once /grabCache receives the params, it will
+                    look over the medicines collection and check if the passed ID exists.
+                    If it is, then grab the value of the pil/spc path, if they're the same then
+                    proceed to go to the files collection and grab that document based on the path
+                    (i.e., the file is cached and updated)
+
+                    If the ID passed is NOT in medicines collection, then that means that this hasn't
+                    been cached at all. Proceed to cache everything INCLUDING the other unmentioned path.
+                    
+                    Otherwise if the paths are not the same, change the value of the path in the 
+                    medicine collection, and then call requestDocument() passing that new path, 
+                    and then push it to the files collection.
+
+                    In terms of notification system, when getSubs() is called, all paths are crosschecked 
+                    with the medicine using the medicine id, if it is not equal, then add a counter to
+                    "notifications" otherwise ignore.
+
+                */
                 if (isEqual) {
 
                     console.log(`No new updates`);
