@@ -118,19 +118,37 @@ router.get('/grabCache', async (req, res) => {
 
 // Endpoint to subscribe the medicine
 router.get('/subscribe', async (req, res) => {
+    console.log(`Entered /subscribe endpoint`);
+
     const { user, id, name, pil, spc } = req.query;
     const collectionName = "users";
+    
+    console.log(`Got params`);
+    console.log(`pil: ${pil}`);
+    console.log(`spc: ${spc}`);
 
+
+    // ERROR AROUND HERE
     try {
+        console.log(`Entered try`);
+
         // Fetch documents
-        const token1 = await requestToken();
-        const token2 = await requestToken();
+        const token1 = await requestToken(tokenOptions);
+        const token2 = await requestToken(tokenOptions);
         const pilDoc = await requestDocument(token1, pil);
         const spcDoc = await requestDocument(token2, spc);
 
+        console.log(`Got documents`);
+
+
         try {
+
+            console.log(`Entered 2nd try`);
+
             const pil = { doc: pilDoc };
             const spc = { doc: spcDoc };
+
+            console.log(`Got documents`);
 
             let data = {
                 id: id,
@@ -138,6 +156,8 @@ router.get('/subscribe', async (req, res) => {
                 pil: pil,
                 spc: spc
             };
+
+            console.log(`Attempting to push medicine to user collection now`)
 
             // Use arrayUnion to add 'data' to the 'medicines' array field of the document.
             // If 'medicines' doesn't exist, it will be created.
@@ -147,6 +167,13 @@ router.get('/subscribe', async (req, res) => {
             });
 
             console.log(`Medicine ${id} added to ${user}'s medicines array`);
+
+            // Optionally, fetch the updated document to confirm or send back the updated array
+            let documentSnapshot = await firestore.collection(collectionName).doc(user).get();
+            const documentData = documentSnapshot.data();
+            
+            // Responding with the updated medicines array
+            res.json({ medicines: documentData.medicines });
 
         } catch (error) {
             console.error(error);
@@ -164,29 +191,18 @@ router.get('/subscribe', async (req, res) => {
             });         
 
             console.log(`Medicine ${id} added to ${user}'s medicines array without documents`);
+            
+            // Optionally, fetch the updated document to confirm or send back the updated array
+            let documentSnapshot = await firestore.collection(collectionName).doc(user).get();
+            const documentData = documentSnapshot.data();
+            
+            // Responding with the updated medicines array
+            res.json({ medicines: documentData.medicines });
+
         }
 
     } catch (error) {
         console.error("An error occured: ", error);
-    }
-
-    console.log(`Pushing to server now...`);
-
-    try {
-        // Push new medicine object into 'medicines' array field of the user document
-        await firestore.collection(collectionName).doc(user).update({
-            medicines: admin.firestore.FieldValue.arrayUnion(data)
-        });
-        
-        // Optionally, fetch the updated document to confirm or send back the updated array
-        let documentSnapshot = await firestore.collection(collectionName).doc(user).get();
-        const documentData = documentSnapshot.data();
-        
-        // Responding with the updated medicines array
-        res.json({ medicines: documentData.medicines });
-        
-    } catch (error) {
-        console.error("An error occured at /subscribe: ", error);
     }
 });
 
