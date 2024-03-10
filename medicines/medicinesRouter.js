@@ -25,6 +25,47 @@ router.get('/getMeds', async (req, res) => {
     }
 });
 
+// Endpoint to cache medicine
+router.get('/cacheMed', async (req, res) => {
+    try {
+        const { id, name, activeIngredient, company, status, pil, spc } = req.query;
+        console.log("ID:", id);
+
+        const documentID = id;
+        const collectionName = "medicines";
+
+        let documentSnapshot = await firestore.collection(collectionName).doc(documentID).get();
+
+        if (!documentSnapshot.exists) {
+            console.log(`Caching to server with new documentID: ${documentID}`);
+
+            const data = {
+                name: name,
+                activeIngredient: activeIngredient,
+                company: company,
+                status: status,
+                pilPath: pil,
+                spcPath: spc
+            };
+
+            try {
+                await firestore.collection(collectionName).doc(documentID).set(data);
+                
+                console.log("Cached to server!");
+            } catch (error) {
+
+                console.error("An error occurred at /cacheMed:", error);
+            } 
+
+        } else {
+            console.log(`Medicine is already cached`);
+        }
+
+    } catch (error) {
+        console.error("An error occured at /cacheMed:", error);
+    }
+});
+
 // Endpoint to get cache document
 router.get('/grabCache', async (req, res) => {
     const { uploadPath } = req.query;
@@ -66,7 +107,6 @@ router.get('/grabCache', async (req, res) => {
             } catch (error) {
                 console.error("An error occurred:", error);
                 
-                // Not sending properly!
                 res.type('application/pdf').send(data);
             } 
         }
@@ -78,28 +118,66 @@ router.get('/grabCache', async (req, res) => {
 
 // Endpoint to subscribe the medicine
 router.get('/subscribe', async (req, res) => {
-    const { user, name, activeIngredient, company, pil, spc } = req.query;
+    const { user, id, name, pil, spc } = req.query;
     const collectionName = "users";
 
-    const data = {
-        activeIngredient: activeIngredient,
-        company: company,
-        name: name,
-        pil: pil,
-        spc: spc
-    };
-    
+    try {
+        // Fetch documents
+        const token1 = await requestToken();
+        const token2 = await requestToken();
+        const pilDoc = await requestDocument(token1, pil);
+        const spcDoc = await requestDocument(token2, spc);
+
+        try {
+            const pil = { doc: pilDoc };
+            const spc = { doc: spcDoc };
+
+            let data = {
+                id: id,
+                name: name,
+                pil: pil,
+                spc: spc
+            };
+
+            // Use arrayUnion to add 'data' to the 'medicines' array field of the document.
+            // If 'medicines' doesn't exist, it will be created.
+            // If 'data' already exists in the 'medicines' array, it won't be added again (to prevent duplicates).
+            await firestore.collection(collectionName).doc(user).update({
+                medicines: admin.firestore.FieldValue.arrayUnion(data)
+            });
+
+            console.log(`Medicine ${id} added to ${user}'s medicines array`);
+
+        } catch (error) {
+            console.error(error);
+
+            let data = {
+                id: id,
+                name: name,
+                pil: "",
+                spc: ""
+            };
+
+            // Push it without the documents
+            await firestore.collection(collectionName).doc(user).update({
+                medicines: admin.firestore.FieldValue.arrayUnion(data)
+            });         
+
+            console.log(`Medicine ${id} added to ${user}'s medicines array without documents`);
+        }
+
+    } catch (error) {
+        console.error("An error occured: ", error);
+    }
+
     console.log(`Pushing to server now...`);
 
     try {
-
         // Push new medicine object into 'medicines' array field of the user document
         await firestore.collection(collectionName).doc(user).update({
             medicines: admin.firestore.FieldValue.arrayUnion(data)
         });
         
-        console.log("Medicine added to the user's medicines array!");
-
         // Optionally, fetch the updated document to confirm or send back the updated array
         let documentSnapshot = await firestore.collection(collectionName).doc(user).get();
         const documentData = documentSnapshot.data();
@@ -108,16 +186,17 @@ router.get('/subscribe', async (req, res) => {
         res.json({ medicines: documentData.medicines });
         
     } catch (error) {
-        console.error("An error occured: ", error);
+        console.error("An error occured at /subscribe: ", error);
     }
 });
 
 // Endpoint to check if user has subscribed to the medicine
+// TODO: Improve this, the ID can be passed instead to check 
 router.get('/checkSub', async (req, res) => {
-    const { user, name } = req.query;
-    const collectionName = "users";
-
     try {
+        const { user, name } = req.query;
+        const collectionName = "users";
+
         // Fetch the current user's document to check existing medicines
         const userDoc = await firestore.collection(collectionName).doc(user).get();
 
@@ -143,7 +222,7 @@ router.get('/checkSub', async (req, res) => {
         }
         
     } catch (error) {
-        console.error("An error occurred: ", error);
+        console.error("An error occurred at /checkSub: ", error);
         return res.status(500).send("An error occurred while processing your request.");
     }
 });
@@ -177,7 +256,7 @@ router.get('/getSubs', async (req, res) => {
                 
         
     } catch (error) {
-        console.error("An error occurred: ", error);
+        console.error("An error occurred at /getSubs:", error);
         return res.status(500).send("An error occurred while processing your request.");
     }
 });
