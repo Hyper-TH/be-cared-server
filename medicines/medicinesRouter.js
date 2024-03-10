@@ -118,19 +118,10 @@ router.get('/grabCache', async (req, res) => {
 
 // Endpoint to subscribe the medicine
 router.get('/subscribe', async (req, res) => {
-    console.log(`Entered /subscribe endpoint`);
-
     const { user, id, name, pil, spc } = req.query;
     const collectionName = "users";
-    
-    console.log(`Got params`);
-    console.log(`pil: ${pil}`);
-    console.log(`spc: ${spc}`);
 
-
-    // ERROR AROUND HERE
     try {
-        console.log(`Entered try`);
 
         // Fetch documents
         const token1 = await requestToken(tokenOptions);
@@ -138,17 +129,9 @@ router.get('/subscribe', async (req, res) => {
         const pilDoc = await requestDocument(token1, pil);
         const spcDoc = await requestDocument(token2, spc);
 
-        console.log(`Got documents`);
-
-
         try {
-
-            console.log(`Entered 2nd try`);
-
             const pil = { doc: pilDoc };
             const spc = { doc: spcDoc };
-
-            console.log(`Got documents`);
 
             let data = {
                 id: id,
@@ -157,16 +140,12 @@ router.get('/subscribe', async (req, res) => {
                 spc: spc
             };
 
-            console.log(`Attempting to push medicine to user collection now`)
-
             // Use arrayUnion to add 'data' to the 'medicines' array field of the document.
             // If 'medicines' doesn't exist, it will be created.
             // If 'data' already exists in the 'medicines' array, it won't be added again (to prevent duplicates).
             await firestore.collection(collectionName).doc(user).update({
                 medicines: admin.firestore.FieldValue.arrayUnion(data)
             });
-
-            console.log(`Medicine ${id} added to ${user}'s medicines array`);
 
             // Optionally, fetch the updated document to confirm or send back the updated array
             let documentSnapshot = await firestore.collection(collectionName).doc(user).get();
@@ -190,8 +169,6 @@ router.get('/subscribe', async (req, res) => {
                 medicines: admin.firestore.FieldValue.arrayUnion(data)
             });         
 
-            console.log(`Medicine ${id} added to ${user}'s medicines array without documents`);
-            
             // Optionally, fetch the updated document to confirm or send back the updated array
             let documentSnapshot = await firestore.collection(collectionName).doc(user).get();
             const documentData = documentSnapshot.data();
@@ -207,17 +184,15 @@ router.get('/subscribe', async (req, res) => {
 });
 
 // Endpoint to check if user has subscribed to the medicine
-// TODO: Improve this, the ID can be passed instead to check 
 router.get('/checkSub', async (req, res) => {
     try {
-        const { user, name } = req.query;
+        const { user, id } = req.query;
         const collectionName = "users";
-
+        
         // Fetch the current user's document to check existing medicines
         const userDoc = await firestore.collection(collectionName).doc(user).get();
 
         if (!userDoc.exists) {
-            console.error("User document does not exist.");
             return res.status(404).send("User not found.");
         }
 
@@ -225,20 +200,16 @@ router.get('/checkSub', async (req, res) => {
         const existingMedicines = userData.medicines || [];
         
         // Check if the medicine with the given name already exists
-        const medicineExists = existingMedicines.some(medicine => medicine.name === name);
+        const medicineExists = existingMedicines.some(medicine => medicine.id === id);
         
         if (medicineExists) {
-            console.log("Medicine with the given name already exists.");
-
             return res.json({ exists: true, message: "Medicine already exists in the user's medicines array." });
         } else {
-            console.log("Medicine with the given name does not exist.");
-
             return res.json({ exists: false, message: "Medicine does not exist in the user's medicines array." });
         }
         
     } catch (error) {
-        console.error("An error occurred at /checkSub: ", error);
+        console.error("An error occurred: ", error);
         return res.status(500).send("An error occurred while processing your request.");
     }
 });
@@ -261,7 +232,6 @@ router.get('/getSubs', async (req, res) => {
 
         // Check if the medicines array exists in the document to avoid undefined errors
         if (documentData.medicines) {
-            console.log(`Got subbed medicine list!`);
 
             // Responding with the subscribed medicines array
             res.json({ medicines: documentData.medicines });
@@ -272,7 +242,7 @@ router.get('/getSubs', async (req, res) => {
                 
         
     } catch (error) {
-        console.error("An error occurred at /getSubs:", error);
+        console.error("An error occurred: ", error);
         return res.status(500).send("An error occurred while processing your request.");
     }
 });
