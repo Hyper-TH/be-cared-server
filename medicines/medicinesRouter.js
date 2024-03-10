@@ -277,27 +277,21 @@ router.get('/getSubs', async (req, res) => {
     }
 });
 
-// Endpoint to unsub the medicine 
+// Endpoint to unsub the medicine TODO: Fix this
 router.get('/unSub', async (req, res) => {
-    const { user, medicineName } = req.query; 
+    const { user, id } = req.query; 
     const collectionName = "users";
 
     try {
         // Fetch the current user's document to check existing medicines
         const userDoc = await firestore.collection(collectionName).doc(user).get();
-
-        if (!userDoc.exists) {
-            console.error("User document does not exist.");
-            return res.status(404).send("User not found.");
-        }
-
         const documentData = userDoc.data();
 
         // Check if the medicines array exists in the document to avoid undefined errors
         if (documentData.medicines) {
 
             // Filter the array to exclude the medicine with the specified name
-            const updatedMedicines = documentData.medicines.filter(medicine => medicine.name !== medicineName);
+            const updatedMedicines = documentData.medicines.filter(medicine => medicine.id !== id);
 
             // Update the document with the filtered medicines array
             await firestore.collection(collectionName).doc(user).update({
