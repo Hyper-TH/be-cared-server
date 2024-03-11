@@ -157,7 +157,7 @@ const weeklyCachePIL = async () => {
 
         // Iterate over each document in the collection
         querySnapshot.forEach(async (doc) => {
-            const cachedPath = doc.data().pil;
+            const cachedPath = doc.data().pilPath;
             const medicineID = doc.id;
             const medicineName = doc.data().name;
         
@@ -198,13 +198,18 @@ const weeklyCachePIL = async () => {
                 if (medsData.entities[x].pils[0]) {
                     newPath = medsData.entities[x].pils[0].activePil.file.name;
 
-                    // If new path is the same as currentPath
-                    if (cachedPath === newPath) {
+                    /*
+                        NOTE: 
+                        - The cached path has replaced spaces with '%20'
+                    */
 
+                    // If new path is the same as currentPath
+                    if (decodeURIComponent(cachedPath) === newPath) {
+                        console.log(`${cachedPath} = ${newPath}`);
                         // Call requestDocument() with new path 
                         token = await requestToken(tokenOptions);
                         newPILDoc = await requestDocument(token, encodeURIComponent(newPath));                        // Call requestDocument() with new path 
-
+                        // ERROR HERE
                         console.log(newPILDoc);
 
                         // Fetch the current document's data
@@ -212,17 +217,49 @@ const weeklyCachePIL = async () => {
                         let cachedDocument = documentSnapshot.data();
                         
                         // Compare the two
-                        
+                        // Convert to Buffer if they're not already (this step may be unnecessary if they are already Buffers)
+                        const newDocumentBuffer = Buffer.from(newPILDoc);
+                        const cachedDocumentBuffer = Buffer.from(cachedDocument.doc);
+
+                        // Compare the two documents using Buffer.compare
+                        const isEqual = Buffer.compare(newDocumentBuffer, cachedDocumentBuffer) === 0;
+
+                        if (isEqual) {
+
+                            console.log(`No new updates`);
+                        } 
+
                         // If it's not equal, replace the cachedPath with the new document
+                        else {
+                            console.log("Cached Doc != New Doc");
+                            try {
+                                const data = {
+                                    doc: newPILDoc
+                                }
+
+                                // Update file collection
+                                await firestore.collection("files").doc(newPath).delete();
+                                await firestore.collection("files").doc(newPath).set(data)
+        
+                                
+                                console.log("Cached to server!");
+                            } catch (error) {
+                                console.error("An error occurred:", error);
+                            } 
+                        }
 
                     } 
                     // If new path is different
                     else {
+                        console.log(`${cachedPath} != ${newPath}`);
+
+                        console.log(`Removing ${cachedPath}`);
+
                         // Remove cachedPath in the files collection
-                        await firestore.collection(collectionName).doc(cachedPath).delete();
+                        await firestore.collection("files").doc(cachedPath).delete();
 
                         // Update the pilPath in the medicines collection
-                        await firestore.collection(collectionName).doc(medicineID).update({
+                        await firestore.collection("medicines").doc(medicineID).update({
                             [pilPath]: newPath
                         });
 
@@ -235,7 +272,7 @@ const weeklyCachePIL = async () => {
                         }
             
                         try {
-                            await firestore.collection(collectionName).doc(newPath).set(data);
+                            await firestore.collection("files").doc(newPath).set(data);
                             
                             console.log("Cached to server!");
                         } catch (error) {
@@ -333,19 +370,7 @@ const weeklyCachePIL = async () => {
                     "notifications" otherwise ignore.
 
                 */
-                // if (isEqual) {
 
-                //     console.log(`No new updates`);
-                // } else {
-                //     // TODO: Notification system
-                //     // If documents are not equal, update Firestore with the new document
-                //     const data = {
-                //         doc: newDocument
-                //     };
-
-                //     await firestore.collection(collectionName).doc(documentID).set(data);
-                //     console.log(`Document with ID: ${documentID} has been updated.`);
-                // }
 
 
     } catch (error) {
