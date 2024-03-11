@@ -32,12 +32,23 @@ router.get('/subscribe', async (req, res) => {
     const collectionName = "users";
 
     try {
+        let pilDoc, spcDoc;
 
-        // Fetch documents
-        const token1 = await requestToken(tokenOptions);
-        const token2 = await requestToken(tokenOptions);
-        const pilDoc = await requestDocument(token1, pil);
-        const spcDoc = await requestDocument(token2, spc);
+        // TODO: if pil/spc are empty, put empty!
+        if (pil.length > 0) {
+            const token1 = await requestToken(tokenOptions);
+            let pilDoc = await requestDocument(token1, pil);
+
+        } else {
+            pilDoc = '';
+        }
+
+        if (spc.length > 0) {
+            const token2 = await requestToken(tokenOptions);
+            spcDoc= await requestDocument(token2, spc);
+        } else {
+            spcDoc = '';
+        }
 
         try {
             const pil = { doc: pilDoc };
@@ -85,7 +96,6 @@ router.get('/subscribe', async (req, res) => {
             
             // Responding with the updated medicines array
             res.json({ medicines: documentData.medicines });
-
         }
 
     } catch (error) {
