@@ -13,6 +13,9 @@ router.get('/cacheMed', async (req, res) => {
         const { id, name, activeIngredient, company, status, pil, spc } = req.query;
         console.log("ID:", id);
 
+        const pilPath = pil.replace(/ /g, "_");
+        const spcPath = spc.replace(/ /g, "_");
+
         const documentID = id;
         const collectionName = "medicines";
 
@@ -26,8 +29,8 @@ router.get('/cacheMed', async (req, res) => {
                 activeIngredient: activeIngredient,
                 company: company,
                 status: status,
-                pilPath: pil,
-                spcPath: spc
+                pilPath: pilPath,
+                spcPath: spcPath
             };
 
             try {
@@ -52,7 +55,12 @@ router.get('/cacheMed', async (req, res) => {
 router.get('/grabCache', async (req, res) => {
     const { uploadPath } = req.query;
 
-    const documentID = uploadPath;
+    console.log(uploadPath);
+
+    // Replace space with _ for firestore
+    const documentID = uploadPath.replace(/ /g, "_");
+    console.log(documentID);
+
     const collectionName = "files"; 
     
     try {
