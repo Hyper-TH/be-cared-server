@@ -107,7 +107,6 @@ router.get('/grabCache', async (req, res) => {
 });
 
 // Method to run every day/week
-// TODO encode before passing to requestDocument
 const weeklyCachePIL = async () => {
     const collectionName = "medicines";
 
@@ -225,6 +224,8 @@ const weeklyCachePIL = async () => {
         
                                 console.log("Cached to server!");
                             } catch (error) {
+                                console.log(`Could not cache due to exceeding limits!`);
+
                                 console.error("An error occurred:", error);
                             } 
                         }                     
@@ -257,6 +258,8 @@ const weeklyCachePIL = async () => {
                             
                             console.log("Cached to server!");
                         } catch (error) {
+                            console.log(`Could not cache due to exceeding limits!`);
+
                             console.error("An error occurred:", error);
                         } 
                     }
@@ -277,96 +280,36 @@ const weeklyCachePIL = async () => {
             }
         };
 
-
-
-                // console.log(medicines.entities[0].activeSPC);
-
-                // // Fetch the current document's data
-                // let documentSnapshot = await firestore.collection(collectionName).doc(documentID).get();
-                // let cachedDocument = documentSnapshot.data();
-
-                // let newDocument = await requestDocument(token, encodeURIComponent(documentID));
-
-                // console.log("New Document:", newDocument);
-                // console.log("Old Document:", cachedDocument.doc);
-
-                // // Convert to Buffer if they're not already (this step may be unnecessary if they are already Buffers)
-                // const newDocumentBuffer = Buffer.from(newDocument);
-                // const cachedDocumentBuffer = Buffer.from(cachedDocument.doc);
-
-                // // Compare the two documents using Buffer.compare
-                // const isEqual = Buffer.compare(newDocumentBuffer, cachedDocumentBuffer) === 0;
-
-                /*
-                    TODO: 
-                    Caching medicine
-                    First grab the name of the medicine and execute a requestList() 
-                    and take the first instance (i.e., response[0]) then take these:
-                    name: medicine.name
-                    id: medicine.id
-                    pil: encodeURIComponent(medicine.pils[0].activePil.file.name),
-                    spc: encodeURIComponent(medicine.activeSPC.file.name)
-                    
-                    This requires implementing a new collection called medicines and has this structure:
-                    id: 1321 = {
-                        name: name,
-                        pil_path,
-                        spc_path,
-
-                    }
-
-                    The collection users will also be changed:
-                    user: test2@123.com = {
-                        medicines : [
-                            0: { 
-                                activeIngredient,
-                                company,
-                                name,
-                                pil_path, 
-                                spc_path,
-                                id
-                            }
-                        ],
-                        type: "standard"
-                    }
-                    
-                    The files collection remains the same.
-
-                    PDFRenderPage will also change its logic. It will now pass the medicine.id 
-                    and the corresponding paths. Once /grabCache receives the params, it will
-                    look over the medicines collection and check if the passed ID exists.
-                    If it is, then grab the value of the pil/spc path, if they're the same then
-                    proceed to go to the files collection and grab that document based on the path
-                    (i.e., the file is cached and updated)
-
-                    If the ID passed is NOT in medicines collection, then that means that this hasn't
-                    been cached at all. Proceed to cache everything INCLUDING the other unmentioned path.
-                    
-                    Otherwise if the paths are not the same, change the value of the path in the 
-                    medicine collection, and then call requestDocument() passing that new path, 
-                    and then push it to the files collection.
-
-                    In terms of notification system, when getSubs() is called, all paths are crosschecked 
-                    with the medicine using the medicine id, if it is not equal, then add a counter to
-                    "notifications" otherwise ignore.
-
-                */
-
-
-
     } catch (error) {
         console.error(`Error fetching documents: ${error}`);
     }
     
 };  
 
-// TODO: Move cache endpoints to here
+    /*TODO: Implement this
+        function estimateFirestoreDocumentSize(object) {
+            const jsonString = JSON.stringify(object);
+            // Assuming the environment uses UTF-16 encoding (JavaScript's default string encoding)
+            return new Blob([jsonString]).size;
+        }
 
+        const docSize = estimateFirestoreDocumentSize(yourDocumentObject);
+        console.log(`Estimated document size: ${docSize} bytes`);
+
+        // Check if the document is within Firestore's size limits
+        if (docSize > 1048487) {
+            console.log('The document is too large to store in Firestore.');
+            // Handle the error, maybe split the data or compress it
+        } else {
+            // Safe to write the document to Firestore
+            firestore.collection(collectionName).doc(documentID).set(yourDocumentObject);
+        }
+    */
 // TODO: Vercel has a setup for cron jobs, establish that
-// const job = cron.schedule('*/20 * * * * *', weeklyCachePIL, {
-//     scheduled: true,
-//     timezone: "Europe/London"
-// });
-// job.start();
+const job = cron.schedule('*/2 * * * *', weeklyCachePIL, {
+    scheduled: true,
+    timezone: "Europe/London"
+});
+job.start();
 
 export default router;

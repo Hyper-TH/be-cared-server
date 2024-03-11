@@ -6,7 +6,7 @@ import { getDocs, collection } from 'firebase/firestore';
 import medicinesRouter from './medicines/medicinesRouter.js';
 import drugbankRouter from './drugbank/drugbankRouter.js';
 import productsRouter from './merck/productsRouter.js';
-import cacheRouter from './medicines/weeklyCache/cacheRouter.js';
+import cacheRouter from './medicines/cache/cacheRouter.js';
 
 // Create Express application
 const app = express();
@@ -25,6 +25,8 @@ app.get('/message', (req, res) => {
 app.listen(8000, () => {
     console.log(`Server is running on port 8000`);
 });
+
+// TODO: Middleware before every endpoint
 
 // Endpoint to get user authentications
 app.get('/login', async (req, res) => {

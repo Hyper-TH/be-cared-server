@@ -61,7 +61,7 @@ export async function requestList(token, search) {
                 try {
                     const parsed = JSON.parse(result);
                     
-                    console.log(parsed);
+                    // console.log(parsed);
                     
                     resolve(parsed);
                 } catch (error) {
