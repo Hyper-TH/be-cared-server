@@ -195,9 +195,33 @@ const weeklyCachePIL = async () => {
                 }
 
                 // Now compare the filepath if its the same as cached path
-                // TODO: Might not have PILPATH!
-                newPath = medsData.entities[x].pils[0].activePil.file.name;
-                console.log(`Got path:`, newPath);
+                if (medsData.entities[x].pils[0]) {
+                    newPath = medsData.entities[x].pils[0].activePil.file.name;
+
+                    // If new path is the same as currentPath
+                    if (cachedPath === newPath) {
+
+                        // Call requestDocument() with new path 
+                        // Call requestDocument() with cached path
+                        
+                        // Compare the two
+                        
+                        // If it's not equal, replace the cachedPath with the new document
+
+                    } 
+
+                    // If new path is different
+                    else {
+                        // Remove cachedPath in the files collection
+                        // Update the pilPath in the medicines collection
+                        // Set new instance in the files collection with the newPath
+                        
+                    }
+
+                } else {
+                    console.log(`No new PIL for  ${medicineID} : ${medicineName} `);
+                }
+
                 
                 // If no match is found after looping through all entities
                 if (!found) {
