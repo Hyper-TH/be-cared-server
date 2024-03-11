@@ -3,7 +3,7 @@ import express from 'express';
 import admin from 'firebase-admin';
 import { firestore } from '../../config/config.js';
 import { tokenOptions } from '../tokenOptions.js';
-import { requestToken, requestDocument } from '../methods.js';
+import { requestToken, requestList, requestDocument } from '../methods.js';
 
 const router = express.Router();
 
@@ -143,8 +143,8 @@ router.get('/grabCache', async (req, res) => {
 
 // Method to run every day/week
 // TODO encode before passing to requestDocument
-const weeklyCache = async () => {
-    const collectionName = "files";
+const weeklyCachePIL = async () => {
+    const collectionName = "medicines";
 
     try {
         // Fetch all documents in the collection (or adapt this query to your needs)
@@ -156,27 +156,47 @@ const weeklyCache = async () => {
         }
 
         // Iterate over each document in the collection
-        for (const doc of querySnapshot.docs) {
-            const documentID = doc.id;
-            console.log(`Processing document with ID: ${documentID}`);
+        querySnapshot.forEach(async (doc) => {
+            const documentID = doc.data().pil;
+            const medicineID = doc.data().id;
+            const medicineName = doc.data().name;
+
+            // console.log(`Processing document with medName: ${medicineName}`);
+
+            // console.log(`${doc.id} =>`, doc.data());
 
             try {
-                // Fetch the current document's data
-                let documentSnapshot = await firestore.collection(collectionName).doc(documentID).get();
-                let cachedDocument = documentSnapshot.data();
+                // Get the first result of searchList
+                const token = await requestToken(tokenOptions);
+                const medsData = await requestList(token, medicineName);
 
-                let token = await requestToken(tokenOptions);
-                let newDocument = await requestDocument(token, encodeURIComponent(documentID));
+                console.log(`Processing document with medName: ${medicineName}`);
+                console.log(medsData.entities[0]);
+                
+            } catch (error) {
+                console.error(`An error occurred while processing document ID: ${documentID}:`, error);
+            }
+        });
 
-                console.log("New Document:", newDocument);
-                console.log("Old Document:", cachedDocument.doc);
 
-                // Convert to Buffer if they're not already (this step may be unnecessary if they are already Buffers)
-                const newDocumentBuffer = Buffer.from(newDocument);
-                const cachedDocumentBuffer = Buffer.from(cachedDocument.doc);
 
-                // Compare the two documents using Buffer.compare
-                const isEqual = Buffer.compare(newDocumentBuffer, cachedDocumentBuffer) === 0;
+                // console.log(medicines.entities[0].activeSPC);
+
+                // // Fetch the current document's data
+                // let documentSnapshot = await firestore.collection(collectionName).doc(documentID).get();
+                // let cachedDocument = documentSnapshot.data();
+
+                // let newDocument = await requestDocument(token, encodeURIComponent(documentID));
+
+                // console.log("New Document:", newDocument);
+                // console.log("Old Document:", cachedDocument.doc);
+
+                // // Convert to Buffer if they're not already (this step may be unnecessary if they are already Buffers)
+                // const newDocumentBuffer = Buffer.from(newDocument);
+                // const cachedDocumentBuffer = Buffer.from(cachedDocument.doc);
+
+                // // Compare the two documents using Buffer.compare
+                // const isEqual = Buffer.compare(newDocumentBuffer, cachedDocumentBuffer) === 0;
 
                 /*
                     TODO: 
@@ -232,24 +252,21 @@ const weeklyCache = async () => {
                     "notifications" otherwise ignore.
 
                 */
-                if (isEqual) {
+                // if (isEqual) {
 
-                    console.log(`No new updates`);
-                } else {
-                    // TODO: Notification system
-                    // If documents are not equal, update Firestore with the new document
-                    const data = {
-                        doc: newDocument
-                    };
+                //     console.log(`No new updates`);
+                // } else {
+                //     // TODO: Notification system
+                //     // If documents are not equal, update Firestore with the new document
+                //     const data = {
+                //         doc: newDocument
+                //     };
 
-                    await firestore.collection(collectionName).doc(documentID).set(data);
-                    console.log(`Document with ID: ${documentID} has been updated.`);
-                }
+                //     await firestore.collection(collectionName).doc(documentID).set(data);
+                //     console.log(`Document with ID: ${documentID} has been updated.`);
+                // }
 
-            } catch (error) {
-                console.error(`An error occurred while processing document ID: ${documentID}:`, error);
-            }
-        }
+
     } catch (error) {
         console.error(`Error fetching documents: ${error}`);
     }
@@ -259,7 +276,7 @@ const weeklyCache = async () => {
 // TODO: Move cache endpoints to here
 
 // TODO: Vercel has a setup for cron jobs, establish that
-const job = cron.schedule('0 12 * * *', weeklyCache, {
+const job = cron.schedule('*/1 * * * *', weeklyCachePIL, {
     scheduled: true,
     timezone: "Europe/London"
 });
