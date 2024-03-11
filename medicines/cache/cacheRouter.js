@@ -156,7 +156,8 @@ const weeklyCachePIL = async () => {
         }
 
         // Iterate over each document in the collection
-        querySnapshot.forEach(async (doc) => {
+        // Use a for...of loop to handle async operations
+        for (const doc of querySnapshot.docs) {
             const cachedPath = doc.data().pilPath;
             const medicineID = doc.id;
             const medicineName = doc.data().name;
@@ -198,25 +199,24 @@ const weeklyCachePIL = async () => {
                 if (medsData.entities[x].pils[0]) {
                     newPath = medsData.entities[x].pils[0].activePil.file.name;
 
-                    /*
-                        NOTE: 
-                        - The cached path has replaced spaces with '%20'
-                    */
-
+                    // The cached path has replaced spaces with '%20'
                     // If new path is the same as currentPath
                     if (decodeURIComponent(cachedPath) === newPath) {
                         console.log(`${cachedPath} = ${newPath}`);
+
                         // Call requestDocument() with new path 
                         token = await requestToken(tokenOptions);
-                        newPILDoc = await requestDocument(token, encodeURIComponent(newPath));                        // Call requestDocument() with new path 
-                        // ERROR HERE
+                        let newPILDoc = await requestDocument(token, encodeURIComponent(newPath));                        // Call requestDocument() with new path 
+
                         console.log(newPILDoc);
 
                         // Fetch the current document's data
-                        let documentSnapshot = await firestore.collection(collectionName).doc(documentID).get();
+                        let documentSnapshot = await firestore.collection("files").doc(cachedPath).get();
                         let cachedDocument = documentSnapshot.data();
-                        
-                        // Compare the two
+
+                        // ERROR HERE SOMETIMES HAPPENING
+                        console.log("cacheDocument: ", cachedDocument.doc);
+
                         // Convert to Buffer if they're not already (this step may be unnecessary if they are already Buffers)
                         const newDocumentBuffer = Buffer.from(newPILDoc);
                         const cachedDocumentBuffer = Buffer.from(cachedDocument.doc);
@@ -294,7 +294,7 @@ const weeklyCachePIL = async () => {
             } catch (error) {
                 console.error(`An error occurred while processing medicine ID: ${medicineID}:`, error);
             }
-        });
+        };
 
 
 
