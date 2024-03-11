@@ -34,10 +34,9 @@ router.get('/subscribe', async (req, res) => {
     try {
         let pilDoc, spcDoc;
 
-        // TODO: if pil/spc are empty, put empty!
         if (pil.length > 0) {
             const token1 = await requestToken(tokenOptions);
-            let pilDoc = await requestDocument(token1, pil);
+            pilDoc = await requestDocument(token1, pil);
 
         } else {
             pilDoc = '';

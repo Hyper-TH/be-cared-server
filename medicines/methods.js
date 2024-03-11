@@ -32,9 +32,12 @@ export async function requestToken(options) {
 
 // Method to get list of medicines in JSON format
 export async function requestList(token, search) {
+    // Remove spaces at start and end (needed)
+    const trimmedSearch = search.trim();
+
     const option2 = {
         host: "backend-prod.medicines.ie",
-        path: `/api/v1/medicines?published=true&expand=company%2Cingredients%2CactiveSPC%2Cpils.activePil%2CotherDocs.activeDoc%2CadditionalComs.activeCom&page=1&per-page=25&query=${encodeURIComponent(search)}`,
+        path: `/api/v1/medicines?published=true&expand=company%2Cingredients%2CactiveSPC%2Cpils.activePil%2CotherDocs.activeDoc%2CadditionalComs.activeCom&page=1&per-page=25&query=${encodeURIComponent(trimmedSearch)}`,
         headers: {
             accept: "application/json",
             authorization: `Bearer ${token}`,
@@ -57,6 +60,8 @@ export async function requestList(token, search) {
             response.on('end', function () {
                 try {
                     const parsed = JSON.parse(result);
+                    
+                    console.log(parsed);
                     
                     resolve(parsed);
                 } catch (error) {
