@@ -36,7 +36,7 @@ router.get('/subscribe', async (req, res) => {
 
         if (pil.length > 0) {
             const token1 = await requestToken(tokenOptions);
-            pilDoc = await requestDocument(token1, pil);
+            pilDoc = await requestDocument(token1, encodeURIComponent(pil));
 
         } else {
             pilDoc = '';
@@ -44,7 +44,7 @@ router.get('/subscribe', async (req, res) => {
 
         if (spc.length > 0) {
             const token2 = await requestToken(tokenOptions);
-            spcDoc= await requestDocument(token2, spc);
+            spcDoc= await requestDocument(token2, encodeURIComponent(spc));
         } else {
             spcDoc = '';
         }

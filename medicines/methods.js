@@ -83,7 +83,7 @@ export async function requestDocument(token, uploadPath) {
 
     const options = {
         host: "backend-prod.medicines.ie",
-        path: `/uploads/files/${encodeURIComponent(uploadPath)}`,
+        path: `/uploads/files/${uploadPath}`,
         headers: {
             accept: "application/pdf",
             authorization: `Bearer ${token}`,

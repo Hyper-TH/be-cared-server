@@ -77,7 +77,7 @@ router.get('/grabCache', async (req, res) => {
             console.log(`Caching to server with new documentID: ${documentID}`);
 
             const token = await requestToken(tokenOptions);
-            const document = await requestDocument(token, uploadPath);
+            const document = await requestDocument(token, encodeURIComponent(uploadPath));
  
             const data = {
                 doc: document
@@ -142,6 +142,7 @@ router.get('/grabCache', async (req, res) => {
 /* END BLOCK THAT RUNS EVERY FRIDAY */
 
 // Method to run every day/week
+// TODO encode before passing to requestDocument
 const weeklyCache = async () => {
     const collectionName = "files";
 
@@ -165,7 +166,7 @@ const weeklyCache = async () => {
                 let cachedDocument = documentSnapshot.data();
 
                 let token = await requestToken(tokenOptions);
-                let newDocument = await requestDocument(token, documentID);
+                let newDocument = await requestDocument(token, encodeURIComponent(documentID));
 
                 console.log("New Document:", newDocument);
                 console.log("Old Document:", cachedDocument.doc);
