@@ -157,24 +157,56 @@ const weeklyCachePIL = async () => {
 
         // Iterate over each document in the collection
         querySnapshot.forEach(async (doc) => {
-            const documentID = doc.data().pil;
-            const medicineID = doc.data().id;
+            const cachedPath = doc.data().pil;
+            const medicineID = doc.id;
             const medicineName = doc.data().name;
+        
+            let newPath;
+            console.log(`Processing document with medName: ${medicineName} id: ${medicineID}`);
 
             // console.log(`Processing document with medName: ${medicineName}`);
 
             // console.log(`${doc.id} =>`, doc.data());
 
             try {
+
                 // Get the first result of searchList
                 const token = await requestToken(tokenOptions);
                 const medsData = await requestList(token, medicineName);
 
-                console.log(`Processing document with medName: ${medicineName}`);
-                console.log(medsData.entities[0]);
+                // console.log(medsData.entities[0]);
+                // Initialize x to 0 to start from the first index of medsData.entities
+                let x = 0;
+                let found = false; // Flag to indicate whether a match is found
+
+
+                // Loop through medsData.entities until a match is found or the end of the array is reached
+                while (x < medsData.entities.length && !found) {
+                    if ((medsData.entities[x].id).toString() === medicineID) {
+                        // If a match is found, log the matching entity and set found to true
+                        console.log(`Match found:`);
+                        console.log(`${medsData.entities[x].name} == ${medicineName}`)
+                        found = true;
+                    } else {
+                        // If no match, increment x to check the next entity
+                        console.log("Incremented X");
+                        x = x + 1;
+                    }
+                }
+
+                // Now compare the filepath if its the same as cached path
+                // TODO: Might not have PILPATH!
+                newPath = medsData.entities[x].pils[0].activePil.file.name;
+                console.log(`Got path:`, newPath);
+                
+                // If no match is found after looping through all entities
+                if (!found) {
+                    console.log(`No match found for medicine ID: ${medicineID}`);
+                }
+
                 
             } catch (error) {
-                console.error(`An error occurred while processing document ID: ${documentID}:`, error);
+                console.error(`An error occurred while processing medicine ID: ${medicineID}:`, error);
             }
         });
 
@@ -276,7 +308,7 @@ const weeklyCachePIL = async () => {
 // TODO: Move cache endpoints to here
 
 // TODO: Vercel has a setup for cron jobs, establish that
-const job = cron.schedule('*/1 * * * *', weeklyCachePIL, {
+const job = cron.schedule('*/20 * * * * *', weeklyCachePIL, {
     scheduled: true,
     timezone: "Europe/London"
 });
