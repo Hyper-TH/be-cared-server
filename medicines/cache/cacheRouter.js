@@ -171,7 +171,7 @@ const weeklyCachePIL = async () => {
             try {
 
                 // Get the first result of searchList
-                const token = await requestToken(tokenOptions);
+                let token = await requestToken(tokenOptions);
                 const medsData = await requestList(token, medicineName);
 
                 // console.log(medsData.entities[0]);
@@ -202,20 +202,45 @@ const weeklyCachePIL = async () => {
                     if (cachedPath === newPath) {
 
                         // Call requestDocument() with new path 
-                        // Call requestDocument() with cached path
+                        token = await requestToken(tokenOptions);
+                        newPILDoc = await requestDocument(token, encodeURIComponent(newPath));                        // Call requestDocument() with new path 
+
+                        console.log(newPILDoc);
+
+                        // Fetch the current document's data
+                        let documentSnapshot = await firestore.collection(collectionName).doc(documentID).get();
+                        let cachedDocument = documentSnapshot.data();
                         
                         // Compare the two
                         
                         // If it's not equal, replace the cachedPath with the new document
 
                     } 
-
                     // If new path is different
                     else {
                         // Remove cachedPath in the files collection
+                        await firestore.collection(collectionName).doc(cachedPath).delete();
+
                         // Update the pilPath in the medicines collection
+                        await firestore.collection(collectionName).doc(medicineID).update({
+                            [pilPath]: newPath
+                        });
+
                         // Set new instance in the files collection with the newPath
+                        token = await requestToken(tokenOptions);
+                        newPILDoc = await requestDocument(token, encodeURIComponent(newPath)); 
                         
+                        const data = {
+                            doc: newPILDoc
+                        }
+            
+                        try {
+                            await firestore.collection(collectionName).doc(newPath).set(data);
+                            
+                            console.log("Cached to server!");
+                        } catch (error) {
+                            console.error("An error occurred:", error);
+                        } 
                     }
 
                 } else {
