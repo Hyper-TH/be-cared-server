@@ -382,10 +382,10 @@ const weeklyCachePIL = async () => {
 // TODO: Move cache endpoints to here
 
 // TODO: Vercel has a setup for cron jobs, establish that
-const job = cron.schedule('*/20 * * * * *', weeklyCachePIL, {
-    scheduled: true,
-    timezone: "Europe/London"
-});
-job.start();
+// const job = cron.schedule('*/20 * * * * *', weeklyCachePIL, {
+//     scheduled: true,
+//     timezone: "Europe/London"
+// });
+// job.start();
 
 export default router;
