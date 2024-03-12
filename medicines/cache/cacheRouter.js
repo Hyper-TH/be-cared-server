@@ -3,6 +3,7 @@ import admin from 'firebase-admin';
 import { firestore } from '../../config/config.js';
 import { tokenOptions } from '../tokenOptions.js';
 import { requestToken, requestDocument } from '../methods.js';
+import { estimateFirestoreDocumentSize } from './util/estimateFirestoreDocumentSize.js';
 
 const router = express.Router();
 
@@ -77,13 +78,14 @@ router.get('/grabCache', async (req, res) => {
 
             const token = await requestToken(tokenOptions);
             const document = await requestDocument(token, encodeURIComponent(uploadPath));
- 
-            const data = {
-                doc: document
-            }
+            
+            const docSize = estimateFirestoreDocumentSize(docSize);
 
-            // Sample medicine: PIL for Panadol ActiFast 500mg Soluble Tablets
-            try {
+            if (!docSize) {
+                const data = {
+                    doc: document
+                }
+
                 await firestore.collection(collectionName).doc(documentID).set(data);
                 
                 console.log("Cached to server!");
@@ -93,11 +95,12 @@ router.get('/grabCache', async (req, res) => {
               
                 res.type('application/pdf').send(documentData);
 
-            } catch (error) {
-                console.error("An error occurred:", error);
+            } else {
+                console.log(`File size too large to cache`);
                 
                 res.type('application/pdf').send(data);
-            } 
+            }
+
         }
 
     } catch (error) {

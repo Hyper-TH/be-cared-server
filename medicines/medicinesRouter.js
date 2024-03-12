@@ -3,8 +3,8 @@ import admin from 'firebase-admin';
 import { firestore } from '../config/config.js';
 import { tokenOptions } from './tokenOptions.js';
 import { requestToken, requestList, requestDocument } from './methods.js'
-import { unequalDocuments } from './cache/conditions.js';
-import { compareBuffer } from './cache/util/compareBuffer.js';
+import { notifications } from './cache/cacheMethods.js';
+import { estimateFirestoreDocumentSize } from './cache/util/estimateFirestoreDocumentSize.js';
 
 const router = express.Router();
 
@@ -27,39 +27,51 @@ router.get('/getMeds', async (req, res) => {
     }
 });
 
-
 // Endpoint to subscribe the medicine
 router.get('/subscribe', async (req, res) => {
     const { user, id, name, pil, spc } = req.query;
     const collectionName = "users";
+    let token, pilDoc, spcDoc, newPIL, newSPC;
+
 
     try {
-        let pilDoc, spcDoc;
-
         if (pil.length > 0) {
-            const token1 = await requestToken(tokenOptions);
-            pilDoc = await requestDocument(token1, encodeURIComponent(pil));
-
+            token = await requestToken(tokenOptions);
+            pilDoc = await requestDocument(token, encodeURIComponent(pil));
         } else {
             pilDoc = '';
         }
 
         if (spc.length > 0) {
-            const token2 = await requestToken(tokenOptions);
-            spcDoc= await requestDocument(token2, encodeURIComponent(spc));
+            token = await requestToken(tokenOptions);
+            spcDoc = await requestDocument(token, encodeURIComponent(spc));
         } else {
             spcDoc = '';
         }
 
         try {
-            const pil = { doc: pilDoc };
-            const spc = { doc: spcDoc };
+            const pilSize = estimateFirestoreDocumentSize(pilDoc);
+            const spcSize = estimateFirestoreDocumentSize(spcDoc);
+
+            if (pilSize && spcSize) {
+                newPIL = { doc: pilDoc, cachable: false };
+                newSPC = { doc: spcDoc, cachable: false };
+            } else if (!pilSize && spcSize) {
+                newPIL = { doc: pilDoc, cachable: true };
+                newSPC = { doc: spcDoc, cachable: false };
+            } else if (pilSize && !spcSize) {
+                newPIL = { doc: pilDoc, cachable: false };
+                newSPC = { doc: spcDoc, cachable: true };
+            } else {
+                newPIL = { doc: pilDoc, cachable: true };
+                newSPC = { doc: spcDoc, cachable: true };
+            }
 
             let data = {
                 id: id,
                 name: name,
-                pil: pil,
-                spc: spc
+                pil: newPIL,
+                spc: newSPC
             };
 
             // Use arrayUnion to add 'data' to the 'medicines' array field of the document.
@@ -78,25 +90,6 @@ router.get('/subscribe', async (req, res) => {
 
         } catch (error) {
             console.error(error);
-
-            let data = {
-                id: id,
-                name: name,
-                pil: "",
-                spc: ""
-            };
-
-            // Push it without the documents
-            await firestore.collection(collectionName).doc(user).update({
-                medicines: admin.firestore.FieldValue.arrayUnion(data)
-            });         
-
-            // Optionally, fetch the updated document to confirm or send back the updated array
-            let documentSnapshot = await firestore.collection(collectionName).doc(user).get();
-            const documentData = documentSnapshot.data();
-            
-            // Responding with the updated medicines array
-            res.json({ medicines: documentData.medicines });
         }
 
     } catch (error) {
@@ -139,7 +132,6 @@ router.get('/checkSub', async (req, res) => {
 router.get('/getSubs', async (req, res) => {
     const { user } = req.query; 
     const collectionName = "users";
-    let count;
 
     try {
         // Fetch the current user's document to check existing medicines
@@ -153,63 +145,16 @@ router.get('/getSubs', async (req, res) => {
         const documentData = userDoc.data();
         const medicines = documentData.medicines;
 
+        console.log(medicines[0].pil);
+
         // Check if the medicines array exists in the document to avoid undefined errors
         if (medicines.length > 0) {
 
-            // Iterate through each medicine object
-            medicines.forEach(async (medicine) => {
-                
-                if (medicine.pil.doc !== '') {
-                    const documentSnapshot = await firestore.collection("medicines").doc(medicine.id).get();
-                    const userPIL = medicine.pil.doc;
-                    const cachedPath = documentSnapshot.data().pilPath; 
 
-                    console.log(`Cached userpil:`, userPIL);
-
-                    // GET CACHED DOC
-                    const documentSnapshot2 = await firestore.collection("files").doc(cachedPath).get();
-                    const cachedDoc = documentSnapshot2.data();
-
-                    let isEqual = compareBuffer(userPIL, cachedDoc);
-                            
-                    if (isEqual) { 
-                        console.log(`No new updates`); 
-                    } else {
-                        await unequalDocuments(cachedPath, newPath, newPILDoc);
-
-                        count = count + 1;
-                    }
-                } else {
-                    console.log(`No cached userPIL`);
-                }
-                
-                if (medicine.spc.doc !== '') {
-                    const documentSnapshot = await firestore.collection("medicines").doc(medicine.id).get();
-                    const userSPC = medicine.spc.doc;
-                    const cachedPath = documentSnapshot.data().spcPath; 
-
-                    console.log(`Cached userSPC:`, userSPC);
-
-                    // GET CACHED DOC
-                    const documentSnapshot2 = await firestore.collection("files").doc(cachedPath).get();
-                    const cachedDoc = documentSnapshot2.data();
-
-                    let isEqual = compareBuffer(userSPC, cachedDoc);
-                            
-                    if (isEqual) { 
-                        console.log(`No new updates`); 
-                    } else {    
-                        count = count + 1;
-                    }
-                } else {
-                    console.log(`No cached SPC`);
-                }
-
-                // TODO: how will the user get updated? Perhaps update when they redirect!
-            });
+            const [ subList, count ] = await notifications(medicines);
 
             // Responding with the subscribed medicines array
-            res.json({ medicines: documentData.medicines, count: count });
+            res.json({ medicines: subList, count: count });
         } else {
             // If the medicines array does not exist, respond with an empty array
             res.json({ medicines: [], count: 0 });
