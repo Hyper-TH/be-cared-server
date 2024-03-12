@@ -21,7 +21,7 @@ export const equalPath = async (cachedPath, newPath) => {
     return [ newPILDoc, cachedDoc ];
 };  
 
-/* CONDITION 1.1.b cachedDocument != newDocument */
+/* CONDITION: cachedDocument != newDocument */
 export const unequalDocuments = async (cachedPath, newPath, newPILDoc) => {
     console.log(`cachedDoc != newDoc`);
 
@@ -48,7 +48,7 @@ export const unequalDocuments = async (cachedPath, newPath, newPILDoc) => {
     } 
 };
 
-/* CONDITION 1.2: cachedPath does not have a cachedDocument */
+/* CONDITION: cachedPath does not have a cachedDocument */
 export const uncachedPath = async (newPILDoc, newPath) => {
     console.log(`newPath does not exist in the files collection`);
 
@@ -75,7 +75,7 @@ export const uncachedPath = async (newPILDoc, newPath) => {
     } 
 };
 
-/* CONDITION 2: cachedPath !== newPath */
+/* CONDITION: cachedPath !== newPath */
 export const unequalPaths = async (cachedPath, newPath, medicineID) => {
     console.log(`${cachedPath} != ${newPath}`);
     console.log(`Removing ${cachedPath}`);

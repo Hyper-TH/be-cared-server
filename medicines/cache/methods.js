@@ -1,5 +1,4 @@
 import cron from 'node-cron';
-import admin from 'firebase-admin';
 import { firestore } from '../../config/config.js';
 import { equalPath, unequalDocuments, uncachedPath, unequalPaths, outdatedCache, unavailableMed } from './conditions.js';
 import { getNewMedsData } from './util/getNewMedsData.js';
@@ -57,12 +56,12 @@ const weeklyCachePIL = async () => {
                     await outdatedCache(medicineID, cachedPath);
                 }
                 
-                // If no match is found after looping through all entities
                 if (!found) {
                     await unavailableMed(medicineID);
 
                     console.log(`No match found for medicine ID: ${medicineID}`);
                 }
+                
             } catch (error) {
                 console.error(`An error occurred while processing medicine ID: ${medicineID}:`, error);
             }
