@@ -4,7 +4,7 @@ import { firestore } from '../../config/config.js';
 import { tokenOptions } from '../tokenOptions.js';
 import { requestToken, requestList, requestDocument } from '../methods.js';
 
-import { condition1, condition1_1, condition1_b, condition1_c } from './conditions.js';
+import { condition1, condition1_1, condition1_b, condition1_c, newMedsData } from './conditions.js';
 
 function estimateFirestoreDocumentSize(object) {
     const jsonString = JSON.stringify(object);
@@ -35,49 +35,25 @@ const weeklyCachePIL = async () => {
             let docSize;
             let newPath;
 
-            console.log(`\n\nProcessing document with medName: ${medicineName} id: ${medicineID}`);
+            console.log(`\nProcessing document with medName: ${medicineName} id: ${medicineID}`);
 
             try {
-
-                // Get the first result of searchList
-                let token = await requestToken(tokenOptions);
-                const medsData = await requestList(token, medicineName);
-
-                // Initialize x to 0 to start from the first index of medsData.entities
-                let x = 0;
-                let found = false; // Flag to indicate whether a match is found
-
-                // Loop through medsData.entities until a match is found or the end of the array is reached
-                while (x < medsData.entities.length && !found) {
-                    if ((medsData.entities[x].id).toString() === medicineID) {
-                        // If a match is found, log the matching entity and set found to true
-                        console.log(`Match found:`);
-                        // console.log(`${medsData.entities[x].name} == ${medicineName}`);
-
-                        found = true;
-                    } else {
-                        // If no match, increment x to check the next entity
-                        console.log("Incremented X");
-
-                        x = x + 1;
-                    }
-                }   // end while
+                const [ found, medsData ] = await newMedsData(medicineID, medicineName);
 
                 // Now compare the filepath if its the same as cached path
                 // ROOT CONDITION: IF FOUND PIL 
-                if (medsData.entities[x].pils[0]) {
+                if (medsData.pils[0]) {
 
-                    newPath = medsData.entities[x].pils[0].activePil.file.name;
+                    newPath = medsData.pils[0].activePil.file.name;
 
                     /* CONDITION 1: cachedPath === newPath  */
                     // If new path is the same as currentPath
                     if (decodeURIComponent(cachedPath) === newPath) {
 
-                        console.log(`\nEntering Condition 1:`)
+                        console.log(`\nEntering Condition 1:`);
                         let [ newPILDoc, cachedDocument ] = await condition1(cachedPath, newPath);
                         
                         /* CONDITION 1.1: cachedPath has a cachedDocument */
-                        // If there is a document cached
                         if (cachedDocument) {
 
                             let isEqual = await condition1_1(cachedDocument, newPILDoc);
@@ -86,7 +62,6 @@ const weeklyCachePIL = async () => {
                             if (isEqual) { console.log(`No new updates`); } 
     
                             /* CONDITION 1.1.b cachedDocument is not equal to newDocument */
-                            // If it's not equal, replace the cachedPath with the new document
                             else {
                                 await condition1_b(cachedPath, newPath, newPILDoc);
                             }
@@ -94,16 +69,14 @@ const weeklyCachePIL = async () => {
                         }  // end CONDITION 1.1
 
                         /* CONDITION 1.2: cachedPath does not have a cachedDocument */
-                        // If the path isn't cached yet (i.e., path does not exist in files collection)
-                        else {
-                            await condition1_c(newPILDoc, newPath);   
-                        }                     
+                        else { await condition1_c(newPILDoc, newPath); }                     
 
                     } 
 
                     /* CONDITION 2: cachedPath !== newPath */
-                    // If new path is different
                     else {
+                        console.log(`\nEntering Condition 1:`);
+
                         console.log(`${cachedPath} != ${newPath}`);
 
                         console.log(`Removing ${cachedPath}`);
