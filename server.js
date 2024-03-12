@@ -3,6 +3,7 @@ import cors from 'cors';
 import admin from 'firebase-admin';
 import { firestore, db } from './config/config.js';
 import { getDocs, collection } from 'firebase/firestore';
+import { job } from './medicines/cache/methods.js';
 import medicinesRouter from './medicines/medicinesRouter.js';
 import drugbankRouter from './drugbank/drugbankRouter.js';
 import productsRouter from './merck/productsRouter.js';
@@ -98,3 +99,5 @@ app.use(drugbankRouter);
 app.use(medicinesRouter);
 app.use(productsRouter);
 app.use(cacheRouter);
+
+// job.start();
