@@ -13,11 +13,11 @@ function estimateFirestoreDocumentSize(object) {
 
 // Method to run every day/week
 const weeklyCachePIL = async () => {
-    const collectionName = "medicines";
+    console.log("Job started");
 
     try {
         // Fetch all documents in the collection 
-        const querySnapshot = await firestore.collection(collectionName).get();
+        const querySnapshot = await firestore.collection("medicines").get();
 
         if (querySnapshot.empty) {
             console.log('No documents found.');
@@ -30,6 +30,7 @@ const weeklyCachePIL = async () => {
             const cachedPath = doc.data().pilPath;
             const medicineID = doc.id;
             const medicineName = doc.data().name;
+            let docSize;
             let newPath;
 
             console.log(`Processing document with medName: ${medicineName} id: ${medicineID}`);
@@ -60,17 +61,20 @@ const weeklyCachePIL = async () => {
                     }
                 }   // end while
 
-                /* CONDITION 1 */
                 // Now compare the filepath if its the same as cached path
+                // ROOT CONDITION: IF FOUND PIL 
                 if (medsData.entities[x].pils[0]) {
+
                     newPath = medsData.entities[x].pils[0].activePil.file.name;
 
-                    // The cached path has replaced spaces with '%20'
+                    /* CONDITION 1: cachedPath === newPath  */
                     // If new path is the same as currentPath
                     if (decodeURIComponent(cachedPath) === newPath) {
+
                         console.log(`${cachedPath} = ${newPath}`);
 
                         // Call requestDocument() with new path 
+                        // The cached path has replaced spaces with '%20'
                         token = await requestToken(tokenOptions);
                         let newPILDoc = await requestDocument(token, encodeURIComponent(newPath));                      
 
@@ -80,10 +84,13 @@ const weeklyCachePIL = async () => {
                         let documentSnapshot = await firestore.collection("files").doc(cachedPath).get();
                         let cachedDocument = documentSnapshot.data();
 
+                        /* CONDITION 1.1: cachedPath has a cachedDocument  */
                         // If there is a document cached
                         if (cachedDocument) {
+
                             console.log("cacheDocument: ", cachedDocument.doc);
 
+                            // TODO: Buffer comparer shorten this!
                             // Convert to Buffer if they're not already (this step may be unnecessary if they are already Buffers)
                             const newDocumentBuffer = Buffer.from(newPILDoc);
                             const cachedDocumentBuffer = Buffer.from(cachedDocument.doc);
@@ -91,33 +98,45 @@ const weeklyCachePIL = async () => {
                             // Compare the two documents using Buffer.compare
                             const isEqual = Buffer.compare(newDocumentBuffer, cachedDocumentBuffer) === 0;
     
-                            /* CONDITION 1 */
-                            if (isEqual) {
+                            /* CONDITION 1.1.a: cachedDocument is equal to newDocument*/
+                            if (isEqual) { console.log(`No new updates`); } 
     
-                                console.log(`No new updates`);
-                            } 
-    
-                            /* CONDITION 1. */
+                            /* CONDITION 1.1.b cachedDocument is not equal to newDocument */
                             // If it's not equal, replace the cachedPath with the new document
                             else {
-                                console.log("Cached Doc != New Doc");
+                                console.log("cachedDoc != newDoc");
                                 try {
                                     const data = {
                                         doc: newPILDoc
                                     }
     
-                                    // Update file collection
-                                    await firestore.collection("files").doc(newPath).delete();
-                                    await firestore.collection("files").doc(newPath).set(data)
-            
-                                    
-                                    console.log("Cached to server!");
+                                    docSize = estimateFirestoreDocumentSize(newPILDoc);
+                                    console.log(`Estimated document size: ${docSize} bytes`);
+
+                                    /* CONDITION 1.1.c: newDocument is above limit */
+                                    if (docSize > 1048487) {
+                                        // Still delete the outdated document
+                                        await firestore.collection("files").doc(cachedPath).delete();
+                                        console.log('The document is too large to store in Firestore.');
+                                    } 
+
+                                    /* CONDITION 1.1.d: newDocument is below limit */
+                                    else {
+                                        // Update file collection
+                                        await firestore.collection("files").doc(cachedPath).delete();
+                                        await firestore.collection("files").doc(newPath).set(data);
+                                        
+                                        console.log("Cached to server!");
+                                    }
+
                                 } catch (error) {
                                     console.error("An error occurred:", error);
                                 } 
                             }
     
-                        }  
+                        }  // end CONDITION 1.1
+
+                        /* CONDITION 1.2: cachedPath does not have a cachedDocument */
                         // If the path isn't cached yet (i.e., path does not exist in files collection)
                         else {
                             try {
@@ -125,18 +144,21 @@ const weeklyCachePIL = async () => {
                                     doc: newPILDoc
                                 }
 
-                                const docSize = estimateFirestoreDocumentSize(newPILDoc);
+                                docSize = estimateFirestoreDocumentSize(newPILDoc);
                                 console.log(`Estimated document size: ${docSize} bytes`);
 
-                                // Check if the document is within Firestore's size limits
+                                /* CONDITION 1.1.c: newDocument is above limit */
                                 if (docSize > 1048487) {
                                     console.log('The document is too large to store in Firestore.');
-                                } else {
+                                    await firestore.collection("files").doc(newPath).delete();
+                                } 
+                                
+                                /* CONDITION 1.1.d: newDocument is below limit */
+                                else {
 
-                                    // Safe to write the document to Firestore
                                     // Update file collection
                                     await firestore.collection("files").doc(newPath).delete();
-                                    await firestore.collection("files").doc(newPath).set(data)
+                                    await firestore.collection("files").doc(newPath).set(data);
             
                                     console.log("Cached to server!");
                                 }
@@ -149,6 +171,8 @@ const weeklyCachePIL = async () => {
                         }                     
 
                     } 
+
+                    /* CONDITION 2: cachedPath !== newPath */
                     // If new path is different
                     else {
                         console.log(`${cachedPath} != ${newPath}`);
@@ -167,14 +191,29 @@ const weeklyCachePIL = async () => {
                         token = await requestToken(tokenOptions);
                         newPILDoc = await requestDocument(token, encodeURIComponent(newPath)); 
                         
-                        const data = {
-                            doc: newPILDoc
-                        }
-            
                         try {
-                            await firestore.collection("files").doc(newPath).set(data);
+                            docSize = estimateFirestoreDocumentSize(newPILDoc);
+                            console.log(`Estimated document size: ${docSize} bytes`);
+
+                            /* CONDITION 1.1.c: newDocument is above limit */
+                            if (docSize > 1048487) {
+                                console.log('The document is too large to store in Firestore.');
+                                await firestore.collection("files").doc(newPath).delete();
+                            } 
                             
-                            console.log("Cached to server!");
+                            /* CONDITION 1.1.d: newDocument is below limit */
+                            else {
+                                const data = {
+                                    doc: newPILDoc
+                                }
+    
+                                // Update file collection
+                                await firestore.collection("files").doc(newPath).delete();
+                                await firestore.collection("files").doc(newPath).set(data);
+        
+                                console.log("Cached to server!");
+                            }
+
                         } catch (error) {
                             console.log(`Could not cache due to exceeding limits!`);
 
@@ -182,17 +221,26 @@ const weeklyCachePIL = async () => {
                         } 
                     }
 
-                } else {
+                } 
+                
+                // ROOT CONDITION: NO FOUND PIL
+                else {
+
+                    // Remove current PIL
                     console.log(`No new PIL for  ${medicineID} : ${medicineName} `);
                 }
-
                 
                 // If no match is found after looping through all entities
                 if (!found) {
+                    console.log(`No PIL found in newer version of the medicine, removing PIL path now...`);
+
+                    // Remove pilPath within medicines
+                    await firestore.collection("medicines").doc(medicineID).update({
+                        'pilPath': ''
+                    });
+
                     console.log(`No match found for medicine ID: ${medicineID}`);
                 }
-
-                
             } catch (error) {
                 console.error(`An error occurred while processing medicine ID: ${medicineID}:`, error);
             }
@@ -202,11 +250,12 @@ const weeklyCachePIL = async () => {
         console.error(`Error fetching documents: ${error}`);
     }
     
+    console.log("Job Ended");
 };  
 
 
 // TODO: Vercel has a setup for cron jobs, establish that
-export const job = cron.schedule('*/45 * * * * *', weeklyCachePIL, {
+export const job = cron.schedule('*/59 * * * * *', weeklyCachePIL, {
     scheduled: true,
     timezone: "Europe/London"
 });
