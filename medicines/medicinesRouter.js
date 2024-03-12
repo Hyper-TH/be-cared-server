@@ -3,6 +3,8 @@ import admin from 'firebase-admin';
 import { firestore } from '../config/config.js';
 import { tokenOptions } from './tokenOptions.js';
 import { requestToken, requestList, requestDocument } from './methods.js'
+import { unequalDocuments } from './cache/conditions.js';
+import { compareBuffer } from './cache/util/compareBuffer.js';
 
 const router = express.Router();
 
@@ -137,6 +139,7 @@ router.get('/checkSub', async (req, res) => {
 router.get('/getSubs', async (req, res) => {
     const { user } = req.query; 
     const collectionName = "users";
+    let count;
 
     try {
         // Fetch the current user's document to check existing medicines
@@ -148,17 +151,69 @@ router.get('/getSubs', async (req, res) => {
         }
 
         const documentData = userDoc.data();
+        const medicines = documentData.medicines;
 
         // Check if the medicines array exists in the document to avoid undefined errors
-        if (documentData.medicines) {
+        if (medicines.length > 0) {
+
+            // Iterate through each medicine object
+            medicines.forEach(async (medicine) => {
+                
+                if (medicine.pil.doc !== '') {
+                    const documentSnapshot = await firestore.collection("medicines").doc(medicine.id).get();
+                    const userPIL = medicine.pil.doc;
+                    const cachedPath = documentSnapshot.data().pilPath; 
+
+                    console.log(`Cached userpil:`, userPIL);
+
+                    // GET CACHED DOC
+                    const documentSnapshot2 = await firestore.collection("files").doc(cachedPath).get();
+                    const cachedDoc = documentSnapshot2.data();
+
+                    let isEqual = compareBuffer(userPIL, cachedDoc);
+                            
+                    if (isEqual) { 
+                        console.log(`No new updates`); 
+                    } else {
+                        await unequalDocuments(cachedPath, newPath, newPILDoc);
+
+                        count = count + 1;
+                    }
+                } else {
+                    console.log(`No cached userPIL`);
+                }
+                
+                if (medicine.spc.doc !== '') {
+                    const documentSnapshot = await firestore.collection("medicines").doc(medicine.id).get();
+                    const userSPC = medicine.spc.doc;
+                    const cachedPath = documentSnapshot.data().spcPath; 
+
+                    console.log(`Cached userSPC:`, userSPC);
+
+                    // GET CACHED DOC
+                    const documentSnapshot2 = await firestore.collection("files").doc(cachedPath).get();
+                    const cachedDoc = documentSnapshot2.data();
+
+                    let isEqual = compareBuffer(userSPC, cachedDoc);
+                            
+                    if (isEqual) { 
+                        console.log(`No new updates`); 
+                    } else {    
+                        count = count + 1;
+                    }
+                } else {
+                    console.log(`No cached SPC`);
+                }
+
+                // TODO: how will the user get updated? Perhaps update when they redirect!
+            });
 
             // Responding with the subscribed medicines array
-            res.json({ medicines: documentData.medicines });
+            res.json({ medicines: documentData.medicines, count: count });
         } else {
             // If the medicines array does not exist, respond with an empty array
-            res.json({ medicines: [] });
-        }
-                
+            res.json({ medicines: [], count: 0 });
+        }        
         
     } catch (error) {
         console.error("An error occurred: ", error);
