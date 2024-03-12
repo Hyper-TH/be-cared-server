@@ -7,6 +7,7 @@ import { compareBuffer } from './util/compareBuffer.js';
 // Method to cache PIL every week
 const weeklyCachePIL = async () => {
     console.log("Job started");
+    const path = "pilPath";
 
     try {
         const querySnapshot = await firestore.collection("medicines").get();
@@ -50,7 +51,78 @@ const weeklyCachePIL = async () => {
                         }                     
 
                     } else {
-                        await unequalPaths(cachedPath, newPath, medicineID);
+                        await unequalPaths(cachedPath, newPath, medicineID, path);
+                    }
+                } else {
+                    await outdatedCache(medicineID, cachedPath, path);
+                }
+                
+                if (!found) {
+                    await unavailableMed(medicineID);
+
+                    console.log(`No match found for medicine ID: ${medicineID}`);
+                }
+
+            } catch (error) {
+                console.error(`An error occurred while processing medicine ID: ${medicineID}:`, error);
+            }
+        };
+
+    } catch (error) {
+        console.error(`Error fetching documents: ${error}`);
+    }
+    
+    console.log("Job Ended");
+};  
+
+// Method to cache PIL every week
+const weeklyCacheSPC = async () => {
+    console.log("Job started");
+    const path = "spcPath";
+
+    try {
+        const querySnapshot = await firestore.collection("medicines").get();
+
+        if (querySnapshot.empty) {
+            console.log('No documents found.');
+            return;
+        }
+
+        // Iterate over each document in the collection
+        // Use a for...of loop to handle async operations
+        for (const doc of querySnapshot.docs) {
+            const cachedPath = doc.data().spcPath;
+            const medicineID = doc.id;
+            const medicineName = doc.data().name;
+            let newPath;
+
+            console.log(`\nProcessing document with medName: ${medicineName} id: ${medicineID}`);
+
+            try {
+                const [ found, medsData ] = await getNewMedsData(medicineID, medicineName);
+
+                if (medsData.activeSPC.file.name) {
+
+                    newPath = medsData.activeSPC.file.name;
+
+                    if (decodeURIComponent(cachedPath) === newPath) {
+                        let [ newSPCDoc, cachedDoc ] = await equalPath(cachedPath, newPath);
+                        
+                        if (cachedDoc) {
+                            let isEqual = compareBuffer(newSPCDoc, cachedDoc);
+                            
+                            if (isEqual) { 
+                                console.log(`No new updates`); 
+                            } else {
+                                await unequalDocuments(cachedPath, newPath, newSPCDoc);
+                            }
+    
+                        } else { 
+                            await uncachedPath(newSPCDoc, newPath, path); 
+                        }                     
+
+                    } else {
+                        await unequalPaths(cachedPath, newPath, medicineID, path);
                     }
                 } else {
                     await outdatedCache(medicineID, cachedPath);

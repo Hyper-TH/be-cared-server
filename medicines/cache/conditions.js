@@ -10,27 +10,27 @@ export const equalPath = async (cachedPath, newPath) => {
     // Call requestDocument() with new path 
     // The cached path has replaced spaces with '%20'
     const token = await requestToken(tokenOptions);
-    const newPILDoc = await requestDocument(token, encodeURIComponent(newPath));                      
+    const newDoc = await requestDocument(token, encodeURIComponent(newPath));                      
 
-    console.log(newPILDoc);
+    console.log(newDoc);
 
     // Fetch the current document's data
     const documentSnapshot = await firestore.collection("files").doc(cachedPath).get();
     const cachedDoc = documentSnapshot.data();
 
-    return [ newPILDoc, cachedDoc ];
+    return [ newDoc, cachedDoc ];
 };  
 
 /* CONDITION: cachedDocument != newDocument */
-export const unequalDocuments = async (cachedPath, newPath, newPILDoc) => {
+export const unequalDocuments = async (cachedPath, newPath, newDoc) => {
     console.log(`cachedDoc != newDoc`);
 
     try {
         const data = {
-            doc: newPILDoc
+            doc: newDoc
         }
 
-        const docSize = estimateFirestoreDocumentSize(newPILDoc);
+        const docSize = estimateFirestoreDocumentSize(newDoc);
 
         if (docSize) {
             await firestore.collection("files").doc(cachedPath).delete();
@@ -49,11 +49,11 @@ export const unequalDocuments = async (cachedPath, newPath, newPILDoc) => {
 };
 
 /* CONDITION: cachedPath does not have a cachedDocument */
-export const uncachedPath = async (newPILDoc, newPath) => {
+export const uncachedPath = async (newDoc, newPath) => {
     console.log(`newPath does not exist in the files collection`);
 
     try {
-        const docSize = estimateFirestoreDocumentSize(newPILDoc);
+        const docSize = estimateFirestoreDocumentSize(newDoc);
 
         if (docSize) {
             console.log('The document is too large to store in Firestore.');
@@ -61,7 +61,7 @@ export const uncachedPath = async (newPILDoc, newPath) => {
             await firestore.collection("files").doc(newPath).delete();
         } else {
             const data = {
-                doc: newPILDoc
+                doc: newDoc
             }
 
             await firestore.collection("files").doc(newPath).delete();
@@ -76,30 +76,30 @@ export const uncachedPath = async (newPILDoc, newPath) => {
 };
 
 /* CONDITION: cachedPath !== newPath */
-export const unequalPaths = async (cachedPath, newPath, medicineID) => {
+export const unequalPaths = async (cachedPath, newPath, medicineID, path) => {
     console.log(`${cachedPath} != ${newPath}`);
     console.log(`Removing ${cachedPath}`);
 
     // Remove cachedPath in the files collection
     await firestore.collection("files").doc(cachedPath).delete();
 
-    // Update the pilPath in the medicines collection
+    // Update the path in the medicines collection
     await firestore.collection("medicines").doc(medicineID).update({
-        'pilPath': newPath
+        [path]: newPath
     });
 
     const token = await requestToken(tokenOptions);
-    const newPILDoc = await requestDocument(token, encodeURIComponent(newPath)); 
+    const newDoc = await requestDocument(token, encodeURIComponent(newPath)); 
 
     try {
-        const docSize = estimateFirestoreDocumentSize(newPILDoc);
+        const docSize = estimateFirestoreDocumentSize(newDoc);
 
         if (docSize) {
             console.log('The document is too large to store in Firestore.');
             await firestore.collection("files").doc(newPath).delete();
         } else {
             const data = {
-                doc: newPILDoc
+                doc: newDoc
             }
 
             await firestore.collection("files").doc(newPath).delete();
@@ -114,11 +114,11 @@ export const unequalPaths = async (cachedPath, newPath, medicineID) => {
 };
 
 /* CONDITION: cachedDoc is outdated */
-export const outdatedCache = async (medicineID, cachedPath) => {
+export const outdatedCache = async (medicineID, cachedPath, path) => {
     console.log(`Cached document is outdated`);
 
     await firestore.collection("medicines").doc(medicineID).update({
-        'pilPath': ''
+        [path]: ''
     });
 
     try { 
