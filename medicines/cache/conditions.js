@@ -1,49 +1,10 @@
 import { firestore } from '../../config/config.js';
 import { tokenOptions } from '../tokenOptions.js';
-import { requestToken, requestList, requestDocument } from '../methods.js';
+import { requestToken, requestDocument } from '../methods.js';
+import { estimateFirestoreDocumentSize } from './util/estimateFirestoreDocumentSize.js';
 
-// Method to return size of document
-function estimateFirestoreDocumentSize(object) {
-    const jsonString = JSON.stringify(object);
-
-    // Assuming the environment uses UTF-16 encoding (JavaScript's default string encoding)
-    return new Blob([jsonString]).size;
-};
-
-// Method to get the new version of medicine
-export const newMedsData = async (medicineID, medicineName) => {
-
-    // Get the first result of searchList
-    const token = await requestToken(tokenOptions);
-    const medsList = await requestList(token, medicineName);
-
-    // Initialize x to 0 to start from the first index of medsData.entities
-    let x = 0;
-    let found = false; // Flag to indicate whether a match is found
-
-    // Loop through medsData.entities until a match is found or the end of the array is reached
-    while (x < medsList.entities.length && !found) {
-        if ((medsList.entities[x].id).toString() === medicineID) {
-            // If a match is found, log the matching entity and set found to true
-            console.log(`Match found:`);
-            // console.log(`${medsData.entities[x].name} == ${medicineName}`);
-
-            found = true;
-        } else {
-            // If no match, increment x to check the next entity
-            console.log("Incremented X");
-
-            x = x + 1;
-        }
-    }   // end while
-
-    const medsData = medsList.entities[x];
-
-    return [found, medsData];
-};
-
-/* CONDITION 1: cachedPath === newPath  */
-export const condition1 = async (cachedPath, newPath) => {
+/* CONDITION: cachedPath === newPath  */
+export const equalPath = async (cachedPath, newPath) => {
     console.log(`${cachedPath} = ${newPath}`);
 
     // Call requestDocument() with new path 
@@ -55,28 +16,13 @@ export const condition1 = async (cachedPath, newPath) => {
 
     // Fetch the current document's data
     const documentSnapshot = await firestore.collection("files").doc(cachedPath).get();
-    const cachedDocument = documentSnapshot.data();
+    const cachedDoc = documentSnapshot.data();
 
-    return [ newPILDoc, cachedDocument ];
+    return [ newPILDoc, cachedDoc ];
 };  
 
-/* CONDITION 1.1: cachedPath has a cachedDocument */
-export const condition1_1 = async (cachedDocument, newPILDoc) => {
-    console.log(`cachedDocument: `, cachedDocument.doc, `\n`);
-
-    // TODO: Buffer comparer shorten this!
-    // Convert to Buffer if they're not already (this step may be unnecessary if they are already Buffers)
-    const newDocumentBuffer = Buffer.from(newPILDoc);
-    const cachedDocumentBuffer = Buffer.from(cachedDocument.doc);
-
-    // Compare the two documents using Buffer.compare
-    const isEqual = Buffer.compare(newDocumentBuffer, cachedDocumentBuffer) === 0;
-
-    return isEqual;
-};
-
 /* CONDITION 1.1.b cachedDocument != newDocument */
-export const condition1_b = async (cachedPath, newPath, newPILDoc) => {
+export const unequalDocuments = async (cachedPath, newPath, newPILDoc) => {
     console.log(`cachedDoc != newDoc`);
 
     try {
@@ -85,18 +31,12 @@ export const condition1_b = async (cachedPath, newPath, newPILDoc) => {
         }
 
         const docSize = estimateFirestoreDocumentSize(newPILDoc);
-        console.log(`Estimated document size: ${docSize} bytes`);
 
-        /* CONDITION 1.1.c: newDocument is above limit */
-        if (docSize > 1048487) {
-            // Still delete the outdated document
+        if (docSize) {
             await firestore.collection("files").doc(cachedPath).delete();
-            console.log('The document is too large to store in Firestore.');
-        } 
 
-        /* CONDITION 1.1.d: newDocument is below limit */
-        else {
-            // Update file collection
+            console.log('The document is too large to store in Firestore.');
+        } else {
             await firestore.collection("files").doc(cachedPath).delete();
             await firestore.collection("files").doc(newPath).set(data);
             
@@ -109,28 +49,21 @@ export const condition1_b = async (cachedPath, newPath, newPILDoc) => {
 };
 
 /* CONDITION 1.2: cachedPath does not have a cachedDocument */
-// If the path isn't cached yet (i.e., newPath does not exist in files collection)
-export const condition1_c = async (newPILDoc, newPath) => {
+export const uncachedPath = async (newPILDoc, newPath) => {
     console.log(`newPath does not exist in the files collection`);
 
     try {
-        const data = {
-            doc: newPILDoc
-        }
-
         const docSize = estimateFirestoreDocumentSize(newPILDoc);
-        console.log(`Estimated document size: ${docSize} bytes`);
 
-        /* CONDITION 1.1.c: newDocument is above limit */
-        if (docSize > 1048487) {
+        if (docSize) {
             console.log('The document is too large to store in Firestore.');
-            await firestore.collection("files").doc(newPath).delete();
-        } 
-        
-        /* CONDITION 1.1.d: newDocument is below limit */
-        else {
 
-            // Update file collection
+            await firestore.collection("files").doc(newPath).delete();
+        } else {
+            const data = {
+                doc: newPILDoc
+            }
+
             await firestore.collection("files").doc(newPath).delete();
             await firestore.collection("files").doc(newPath).set(data);
 
@@ -138,8 +71,80 @@ export const condition1_c = async (newPILDoc, newPath) => {
         }
 
     } catch (error) {
-        console.log(`Could not cache due to exceeding limits!`);
-
         console.error("An error occurred:", error);
     } 
+};
+
+/* CONDITION 2: cachedPath !== newPath */
+export const unequalPaths = async (cachedPath, newPath, medicineID) => {
+    console.log(`${cachedPath} != ${newPath}`);
+    console.log(`Removing ${cachedPath}`);
+
+    // Remove cachedPath in the files collection
+    await firestore.collection("files").doc(cachedPath).delete();
+
+    // Update the pilPath in the medicines collection
+    await firestore.collection("medicines").doc(medicineID).update({
+        'pilPath': newPath
+    });
+
+    const token = await requestToken(tokenOptions);
+    const newPILDoc = await requestDocument(token, encodeURIComponent(newPath)); 
+
+    try {
+        const docSize = estimateFirestoreDocumentSize(newPILDoc);
+
+        if (docSize) {
+            console.log('The document is too large to store in Firestore.');
+            await firestore.collection("files").doc(newPath).delete();
+        } else {
+            const data = {
+                doc: newPILDoc
+            }
+
+            await firestore.collection("files").doc(newPath).delete();
+            await firestore.collection("files").doc(newPath).set(data);
+
+            console.log("Cached to server!");
+        }
+
+    } catch (error) {
+        console.error("An error occurred:", error);
+    } 
+};
+
+/* CONDITION: cachedDoc is outdated */
+export const outdatedCache = async (medicineID, cachedPath) => {
+    console.log(`Cached document is outdated`);
+
+    await firestore.collection("medicines").doc(medicineID).update({
+        'pilPath': ''
+    });
+
+    try { 
+        await firestore.collection("files").doc(cachedPath).delete();
+
+        console.log("Document successfully deleted!");
+    } catch (error) {
+        console.error("Error removing document: ", error);
+    }
+
+    console.log(`Cached path and doc removed`);
+};
+
+/* CONDITION: Medicine is not in the website */
+export const unavailableMed = async (medicineID) => {
+    console.log(`Could not find medicine`);
+
+    try {
+        await firestore.collection("medicines").doc(medicineID).delete();
+
+        console.log("Document successfully deleted!");
+    } catch (error) {
+        console.error("Error removing document: ", error);
+    }
+
+    console.log(`Removed cached medicines`);
+
+    // TODO: If medicine is not cached, give warning to users collection
 };
