@@ -121,10 +121,14 @@ export const outdatedCache = async (medicineID, cachedPath, path) => {
         [path]: ''
     });
 
-    try { 
-        await firestore.collection("files").doc(cachedPath).delete();
+    console.log("Path uncached!");
 
-        console.log("Document successfully deleted!");
+    try { 
+        if (cachedPath !== '') {
+            await firestore.collection("files").doc(cachedPath).delete();
+            console.log("Document successfully deleted!");
+        }
+        
     } catch (error) {
         console.error("Error removing document: ", error);
     }
