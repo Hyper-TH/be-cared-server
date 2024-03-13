@@ -78,11 +78,11 @@ router.get('/grabCache', async (req, res) => {
             const document = await getNewDocument(encodeURIComponent(uploadPath));
             const docSize = estimateFirestoreDocumentSize(document);
 
-            if (!docSize) {
-                const data = {
-                    doc: document
-                }
+            const data = {
+                doc: document
+            }
 
+            if (!docSize) {
                 await firestore.collection(collectionName).doc(documentID).set(data);
                 
                 console.log("Cached to server!");
