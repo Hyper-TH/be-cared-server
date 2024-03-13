@@ -16,7 +16,7 @@ router.get('/cacheMed', async (req, res) => {
         const pilPath = pil.replace(/ /g, "_");
         const spcPath = spc.replace(/ /g, "_");
 
-        const documentID = id;
+        const documentID = id.toString();
         const collectionName = "medicines";
 
         let documentSnapshot = await firestore.collection(collectionName).doc(documentID).get();
@@ -49,6 +49,9 @@ router.get('/cacheMed', async (req, res) => {
     } catch (error) {
         console.error("An error occured at /cacheMed:", error);
     }
+
+    res.json({ status : 200});
+    console.log(`Exiting /cacheMed`);
 });
 
 // Endpoint to get cache document
@@ -73,13 +76,10 @@ router.get('/grabCache', async (req, res) => {
             
             res.type('application/pdf').send(documentData);
         } else {
-            // If it does not, cache this to the server!
-            console.log(`Caching to server with new documentID: ${documentID}`);
-
             const token = await requestToken(tokenOptions);
             const document = await requestDocument(token, encodeURIComponent(uploadPath));
             
-            const docSize = estimateFirestoreDocumentSize(docSize);
+            const docSize = estimateFirestoreDocumentSize(document);
 
             if (!docSize) {
                 const data = {
@@ -108,6 +108,83 @@ router.get('/grabCache', async (req, res) => {
     }
 });
 
+// Endpoint to cache document
+router.get('/cacheDoc', async (req, res) => {
+    console.log(`Caching docs`);
+
+    const { pil, spc } = req.query;
+
+    // Replace space with _ for firestore
+    const pilPath = pil.replace(/ /g, "_");
+    const spcPath = spc.replace(/ /g, "_");
+    let pilSnapshot;
+    let spcSnapshot;
+
+    try {
+
+        // TODO: Handle condition where there is no cachedPath
+        if (pil !== '') {
+            pilSnapshot = await firestore.collection("files").doc(pilPath).get();
+        }
+
+        if (spc !== '') {
+            spcSnapshot = await firestore.collection("files").doc(spcPath).get();
+        }
+        
+        if (pilSnapshot && pilSnapshot.exists) {
+            console.log(`PIL doc cached!`);
+        } else if (pilSnapshot) {
+            // If it does not, cache this to the server!
+            console.log(`Caching to server with new documentID: ${pilPath}`);
+
+            const token = await requestToken(tokenOptions);
+            const document = await requestDocument(token, encodeURIComponent(pilPath));
+            
+            const docSize = estimateFirestoreDocumentSize(document);
+
+            if (!docSize) {
+                const data = {
+                    doc: document
+                }
+
+                await firestore.collection("files").doc(pilPath).set(data);
+                
+                console.log("Cached to server!");
+            } else {
+                console.log(`File size too large to cache`);
+            }
+        }
+
+        if (spcSnapshot && spcSnapshot.exists) {
+            console.log(`PIL doc cached!`);
+        } else if (pilSnapshot) {
+            // If it does not, cache this to the server!
+            console.log(`Caching to server with new documentID: ${spcPath}`);
+
+            const token = await requestToken(tokenOptions);
+            const document = await requestDocument(token, encodeURIComponent(spcPath));
+            
+            const docSize = estimateFirestoreDocumentSize(document);
+
+            if (!docSize) {
+                const data = {
+                    doc: document
+                }
+
+                await firestore.collection("files").doc(spcPath).set(data);
+                
+                console.log("Cached to server!");
+            } else {
+                console.log(`File size too large to cache`);
+            }
+        }
+
+    } catch (error) {
+      console.error(`Error fetching data: ${error}`);
+    }
+
+    res.json({ status : 200});
+});
 
 // TODO: Check user's current documents and see if it's the same as files
 // Note: if the document is not present, that means it's either not cached OR the new file is bigger than the limit

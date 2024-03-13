@@ -57,11 +57,11 @@ router.get('/subscribe', async (req, res) => {
                 newPIL = { doc: pilDoc, cachable: false };
                 newSPC = { doc: spcDoc, cachable: false };
             } else if (!pilSize && spcSize) {
-                newPIL = { doc: pilDoc, cachable: true };
-                newSPC = { doc: spcDoc, cachable: false };
-            } else if (pilSize && !spcSize) {
                 newPIL = { doc: pilDoc, cachable: false };
                 newSPC = { doc: spcDoc, cachable: true };
+            } else if (pilSize && !spcSize) {
+                newPIL = { doc: pilDoc, cachable: true };
+                newSPC = { doc: spcDoc, cachable: false };
             } else {
                 newPIL = { doc: pilDoc, cachable: true };
                 newSPC = { doc: spcDoc, cachable: true };
@@ -73,6 +73,10 @@ router.get('/subscribe', async (req, res) => {
                 pil: newPIL,
                 spc: newSPC
             };
+
+            // TODO: Handle Error when there are two PIL documents
+            // Panadol Actifast has two
+            console.log(`New PIL:`, pilDoc);
 
             // Use arrayUnion to add 'data' to the 'medicines' array field of the document.
             // If 'medicines' doesn't exist, it will be created.
@@ -145,16 +149,16 @@ router.get('/getSubs', async (req, res) => {
         const documentData = userDoc.data();
         const medicines = documentData.medicines;
 
-        console.log(medicines[0].pil);
-
         // Check if the medicines array exists in the document to avoid undefined errors
         if (medicines.length > 0) {
 
-
             const [ subList, count ] = await notifications(medicines);
 
+            console.log(subList);
+            
             // Responding with the subscribed medicines array
             res.json({ medicines: subList, count: count });
+
         } else {
             // If the medicines array does not exist, respond with an empty array
             res.json({ medicines: [], count: 0 });

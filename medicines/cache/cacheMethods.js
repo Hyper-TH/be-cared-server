@@ -1,3 +1,15 @@
+
+// TODO: READ FLAW HERE 
+/* 
+    In the case scenario where there is no cached document,
+    and there is an updated document, there is (as of this moment)
+    no way of telling if it has been "seen" before or not.
+
+    Additionally, if the new document is new and not cachable,
+    the server will mark this as uncachable, and therefore 
+    the user side will still stay on the outdated document.
+*/
+
 import  { CronJob } from 'cron';
 import { firestore } from '../../config/config.js';
 import { 
@@ -183,102 +195,173 @@ export const notifications = async (medicines) => {
 
     // Iterate through each medicine object
     for (const medicine of medicines) {
-        
-        // If there is a PIL
-        if (medicine.pil.available) {
+        console.log(`Processing: ${medicine.id}`);
+        const cachedMedicine = await firestore.collection("medicines").doc(medicine.id).get();
+        const cachedMedData = cachedMedicine.data();
 
+        let subMed = {};
+        let pil;
+        let spc;
+        
+        // CONDITION: If there is a PIL
+        if (cachedMedData.pilPath !== '') {
+            const cachedPath = cachedMedData.pilPath; 
+            const cachedFiles = await firestore.collection("files").doc(cachedPath).get();
+            const cachedDoc = cachedFiles.data();
+            
+            console.log(cachedDoc);
+
+            // CONDITION: If user has a PIL
             if (medicine.pil.doc !== '') {
-                const cachedMedicines = await firestore.collection("medicines").doc(medicine.id).get();
-                const userPIL = medicine.pil.doc;
-                const cachedPath = cachedMedicines.data().pilPath; 
-    
-                console.log(`Cached userPIL:`, userPIL);
-    
-                const cachedFiles = await firestore.collection("files").doc(cachedPath).get();
-                const cachedDoc = cachedFiles.data();
-    
-                let isEqual = compareBuffer(userPIL, cachedDoc);
+                let isEqual = compareBuffer(medicine.pil.doc, cachedDoc.doc);
                         
                 if (isEqual) { 
-                    console.log(`No new updates`); 
-
-                    subscriptions.push[{
-                        medicineID: medicine.id,
-                        medicineName: medicine.name,
-
-                    }];
-                    
+                    console.log(`No new updates`);
                 } else {
                     console.log(`New update for PIL`);
-                    // TODO: Update when user clicks on renderButton
-    
                     count = count + 1;
                 }
 
+                pil = {
+                    path: cachedPath,
+                    doc: cachedDoc,
+                    available: true
+                };
+
+            } 
+
+            // CONDITION : If user has no PIL 
+            else {
+                const cachedPath = cachedMedData.pilPath; 
+
+                if (cachedPath !== '') {
+                    const cachedFiles = await firestore.collection("files").doc(cachedPath).get();
+                    const cachedDoc = cachedFiles.data();
+    
+                    pil = {
+                        path: cachedPath,
+                        doc: cachedDoc,
+                        available: true
+                    };
+                } else {
+                    pil = {
+                        path: cachedPath,
+                        doc: '',
+                        available: false
+                    };
+                }
+
+
+                count = count + 1;
+            }
+            
+        } 
+        
+        // CONDITION: If there is no PIL
+        else {
+            const cachedPath = cachedMedData.pilPath; 
+            console.log(`No available PIL`);
+
+            if (cachedPath !== '') {
+                const cachedFiles = await firestore.collection("files").doc(cachedPath).get();
+                const cachedDoc = cachedFiles.data();
+
+                pil = {
+                    path: cachedPath,
+                    doc: cachedDoc,
+                    available: true
+                };
+
             } else {
-                // Return doc object
+                pil = {
+                    path: cachedPath,
+                    doc: '',
+                    available: false
+                };
+            }
+        }
+        
+        // CONDITION: If there is a SPC
+        if (cachedMedData.spcPath !== '') {
+            const cachedPath = cachedMedData.spcPath; 
+            const cachedFiles = await firestore.collection("files").doc(cachedPath).get();
+            const cachedDoc = cachedFiles.data();
 
+            // CONDITION: If user has a SPC
+            if (medicine.spc.doc !== '') {
+                let isEqual = compareBuffer(medicine.spc.doc, cachedDoc.doc);
+                        
+                if (isEqual) { 
+                    console.log(`No new updates`);
+                } else {
+                    console.log(`New update for PIL`);
+                    count = count + 1;
+                }
 
+                // TODO: Update when user clicks on renderButton
+                spc = {
+                    path: cachedPath,
+                    doc: cachedDoc,
+                    available: true
+                };
+
+            } 
+
+            // CONDITION : If user has no SPC 
+            else {
+                const cachedPath = cachedMedData.spcPath; 
+                const cachedFiles = await firestore.collection("files").doc(cachedPath).get();
+                const cachedDoc = cachedFiles.data();
+
+                pil = {
+                    path: cachedPath,
+                    doc: cachedDoc,
+                    available: true
+                };
+
+                count = count + 1;
             }
             
         } else {
-            console.log(`No available PIL`);
+            const cachedPath = cachedMedData.spcPath; 
+            console.log(`No available SPC`);
 
-            // TODO: READ FLAW HERE 
-            /* 
-                In the case scenario where there is no cached document,
-                and there is an updated document, there is (as of this moment)
-                no way of telling if it has been "seen" before or not.
+            if (cachedPath !== '') {
+                const cachedFiles = await firestore.collection("files").doc(cachedPath).get();
+                const cachedDoc = cachedFiles.data();
 
-                Additionally, if the new document is new and not cachable,
-                the server will mark this as uncachable, and therefore 
-                the user side will still stay on the outdated document.
-            */
+                pil = {
+                    path: cachedPath,
+                    doc: cachedDoc,
+                    available: true
+                };
 
-            // count = count + 1;
+            } else {
+                pil = {
+                    path: cachedPath,
+                    doc: '',
+                    available: false
+                };
+            }
         }
         
-        if (medicine.spc !== '') {
-            const documentSnapshot = await firestore.collection("medicines").doc(medicine.id).get();
-            const userSPC = medicine.spc.doc;
-            const cachedPath = documentSnapshot.data().spcPath; 
-
-            console.log(`Cached userSPC:`, userSPC);
-
-            const documentSnapshot2 = await firestore.collection("files").doc(cachedPath).get();
-            const cachedDoc = documentSnapshot2.data();
-
-            let isEqual = compareBuffer(userSPC, cachedDoc);
-                    
-            if (isEqual) { 
-                console.log(`No new updates`); 
-            } else {    
-                console.log(`New update for PIL`);
-                // TODO: Update when user clicks on renderButton
-                // i.e., Render when PDFRender loads
-            }
-
-        } else {
-            console.log(`No cached userSPC`);
-
-            // TODO: READ FLAW HERE 
-            /* 
-                In the case scenario where there is no cached document,
-                and there is an updated document, there is (as of this moment)
-                no way of telling if it has been "seen" before or not.
-
-                Additionally, if the new document is new and not cachable,
-                the server will mark this as uncachable, and therefore 
-                the user side will still stay on the outdated document.
-            */
-
-            // count = count + 1;
+        subMed = {
+            medicineID: medicine.id,
+            medicineName: medicine.name,
+            company: cachedMedData.company, 
+            activeIngredient: cachedMedData.activeIngredient, 
+            pil: pil,
+            spc: spc        
         }
+
+        subscriptions.push(subMed);
 
         // TODO: how will the user get updated? Perhaps update when they redirect!
     };
 
-    return [ medicines, count ];
+    console.log(subscriptions);
+
+    return [ subscriptions, count ];
 };
 
 // TODO: Vercel has a setup for cron jobs, establish that
