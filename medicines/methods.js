@@ -53,21 +53,27 @@ export async function requestList(token, search) {
         https.get(option2, (response) => {
             let result = '';
 
-            response.on('data', function (chunk) {
-                result += chunk;
-            });
+            if (response.statusCode == 200) {  
+                response.on('data', function (chunk) {
+                    result += chunk;
+                });
+    
+                response.on('end', function () {
+                    try {
+                        const parsed = JSON.parse(result);
+                        
+                        // console.log(parsed);
+                        
+                        resolve({ status: 200, list: parsed});
+                    } catch (error) {
+                        console.error('Error parsing JSON:', error);
+                    }
+                });
 
-            response.on('end', function () {
-                try {
-                    const parsed = JSON.parse(result);
-                    
-                    // console.log(parsed);
-                    
-                    resolve(parsed);
-                } catch (error) {
-                    console.error('Error parsing JSON:', error);
-                }
-            });
+            } else {
+                resolve({ status: 404, list: []});
+            }
+            
 
             response.on('error', function (error) {
                 console.error('Error:', error);
@@ -77,6 +83,8 @@ export async function requestList(token, search) {
 };
 
 // Method to request SPC/PIL
+// TODO: This now returns status code 404 if there are no documents available
+// TODO: Perhaps all requestDocument calls are now in a single function instead!
 export async function requestDocument(token, uploadPath) {
 
     console.log("Upload path: ", uploadPath);
@@ -93,34 +101,38 @@ export async function requestDocument(token, uploadPath) {
     };
 
     return new Promise((resolve, reject) => { 
-
         https.get(options, (response) => {
-            const pdfChunks = [];
-            
-            // This should keep going until no more data coming in
-            response.on('data', (chunk) => { 
-                // console.log("Pushed", chunk);
-
-                pdfChunks.push(chunk);
-            });
-
-            response.on('end', () => {
-                // Check if the connection was closed prematurely
-                if (!response.complete) {
-                    reject(new Error('Incomplete response'));
-                    
-                    return;
-                }
-        
-                // This event indicates that the response has been completely received.
-                const pdfBuffer = Buffer.concat(pdfChunks);
-                // console.log(pdfBuffer.toString('utf-8'));
-                
-                resolve(pdfBuffer);                
-            });
-            
             // To check if 200 or not
             console.log(response.statusCode);
+
+            if (response.statusCode == 200) { 
+                const pdfChunks = [];
+
+                // This should keep going until no more data coming in
+                response.on('data', (chunk) => { 
+                    // console.log("Pushed", chunk);
+
+                    pdfChunks.push(chunk);
+                });
+
+                response.on('end', () => {
+                    // Check if the connection was closed prematurely
+                    if (!response.complete) {
+                        reject(new Error('Incomplete response'));   
+                        
+                        return;
+                    }
+
+                    // This event indicates that the response has been completely received.
+                    const pdfBuffer = Buffer.concat(pdfChunks);
+                    // console.log(pdfBuffer.toString('utf-8'));
+                    
+                    resolve({ status: 200, pdfBuffer: pdfBuffer});                
+                });
+            } else {
+                resolve({ status: 404, pdfBuffer: ''});
+            }
+            
 
             response.on('error', (error) => {
                 console.error(`Error retrieving PDF: `, error);

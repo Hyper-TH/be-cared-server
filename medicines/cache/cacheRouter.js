@@ -1,9 +1,8 @@
 import express from 'express';
 import admin from 'firebase-admin';
 import { firestore } from '../../config/config.js';
-import { tokenOptions } from '../tokenOptions.js';
-import { requestToken, requestDocument } from '../methods.js';
 import { estimateFirestoreDocumentSize } from './util/estimateFirestoreDocumentSize.js';
+import { getNewDocument } from './util/getNewDocument.js';
 
 const router = express.Router();
 
@@ -76,9 +75,7 @@ router.get('/grabCache', async (req, res) => {
             
             res.type('application/pdf').send(documentData);
         } else {
-            const token = await requestToken(tokenOptions);
-            const document = await requestDocument(token, encodeURIComponent(uploadPath));
-            
+            const document = await getNewDocument(encodeURIComponent(uploadPath));
             const docSize = estimateFirestoreDocumentSize(document);
 
             if (!docSize) {
@@ -122,60 +119,55 @@ router.get('/cacheDoc', async (req, res) => {
 
     try {
 
-        // TODO: Handle condition where there is no cachedPath
+        // If there is a cachedPath
         if (pil !== '') {
             pilSnapshot = await firestore.collection("files").doc(pilPath).get();
-        }
 
-        if (spc !== '') {
-            spcSnapshot = await firestore.collection("files").doc(spcPath).get();
-        }
-        
-        if (pilSnapshot && pilSnapshot.exists) {
-            console.log(`PIL doc cached!`);
-        } else if (pilSnapshot) {
-            // If it does not, cache this to the server!
-            console.log(`Caching to server with new documentID: ${pilPath}`);
-
-            const token = await requestToken(tokenOptions);
-            const document = await requestDocument(token, encodeURIComponent(pilPath));
-            
-            const docSize = estimateFirestoreDocumentSize(document);
-
-            if (!docSize) {
-                const data = {
-                    doc: document
-                }
-
-                await firestore.collection("files").doc(pilPath).set(data);
-                
-                console.log("Cached to server!");
+            if (pilSnapshot.exists) {
+                console.log(`PIL doc already cached!`);
             } else {
-                console.log(`File size too large to cache`);
+                // If it does not, cache this to the server!
+                console.log(`Caching to server with new documentID: ${pilPath}`);
+                const document = await getNewDocument(encodeURIComponent(pilPath));
+                
+                const docSize = estimateFirestoreDocumentSize(document);
+
+                if (!docSize) {
+                    const data = {
+                        doc: document
+                    }
+
+                    await firestore.collection("files").doc(pilPath).set(data);
+                    
+                    console.log("Cached to server!");
+                } else {
+                    console.log(`File size too large to cache`);
+                }
             }
         }
+        if (spc !== '') {
+            spcSnapshot = await firestore.collection("files").doc(spcPath).get();
 
-        if (spcSnapshot && spcSnapshot.exists) {
-            console.log(`PIL doc cached!`);
-        } else if (pilSnapshot) {
-            // If it does not, cache this to the server!
-            console.log(`Caching to server with new documentID: ${spcPath}`);
-
-            const token = await requestToken(tokenOptions);
-            const document = await requestDocument(token, encodeURIComponent(spcPath));
-            
-            const docSize = estimateFirestoreDocumentSize(document);
-
-            if (!docSize) {
-                const data = {
-                    doc: document
-                }
-
-                await firestore.collection("files").doc(spcPath).set(data);
-                
-                console.log("Cached to server!");
+            if (spcSnapshot.exists) {
+                console.log(`SPC doc already cached!`);
             } else {
-                console.log(`File size too large to cache`);
+                // If it does not, cache this to the server!
+                console.log(`Caching to server with new documentID: ${spcPath}`);
+                const document = await getNewDocument(encodeURIComponent(spcPath));
+                
+                const docSize = estimateFirestoreDocumentSize(document);
+
+                if (!docSize) {
+                    const data = {
+                        doc: document
+                    }
+
+                    await firestore.collection("files").doc(spcPath).set(data);
+                    
+                    console.log("Cached to server!");
+                } else {
+                    console.log(`File size too large to cache`);
+                }
             }
         }
 

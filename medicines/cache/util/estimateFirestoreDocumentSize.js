@@ -1,5 +1,3 @@
-// TODO: Apply this to grabCache
-
 // Method to return size of document
 export const estimateFirestoreDocumentSize = (object) => {
     const jsonString = JSON.stringify(object);

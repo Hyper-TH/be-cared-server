@@ -164,34 +164,34 @@ const weeklyCacheSPC = async () => {
     console.log("Job Ended");
 };  
 
+ /*
+    subscriptions: [
+        {
+            medicineID,
+            medicineName,
+            company,
+            activeIngredient,
+            pil: {
+                path,
+                doc: _bytestring,
+                available: BOOL
+            },
+            spc: {
+                path,
+                doc: _bytestring,
+                available: BOOL
+            }
+        },
+        {
+
+        }
+    ]
+*/
+
 // Method to check if user is up to date
 export const notifications = async (medicines) => {
     let count;
     let subscriptions = [];
-
-    /*
-        subscriptions: [
-            {
-                medicineID,
-                medicineName,
-                company,
-                activeIngredient,
-                pil: {
-                    path,
-                    doc: _bytestring,
-                    available: BOOL
-                },
-                spc: {
-                    path,
-                    doc: _bytestring,
-                    available: BOOL
-                }
-            },
-            {
-
-            }
-        ]
-    */
 
     // Iterate through each medicine object
     for (const medicine of medicines) {

@@ -1,10 +1,10 @@
 import express from 'express';
 import admin from 'firebase-admin';
 import { firestore } from '../config/config.js';
-import { tokenOptions } from './tokenOptions.js';
-import { requestToken, requestList, requestDocument } from './methods.js'
 import { notifications } from './cache/cacheMethods.js';
 import { estimateFirestoreDocumentSize } from './cache/util/estimateFirestoreDocumentSize.js';
+import { getNewDocument } from './cache/util/getNewDocument.js';
+import { getMedicineList } from './cache/util/getMedicineList.js';
 
 const router = express.Router();
 
@@ -16,8 +16,7 @@ router.get('/getMeds', async (req, res) => {
         if (!medQuery) {
             return res.status(400).json({ error: 'Medicine is required' });
         } else {
-            const token = await requestToken(tokenOptions);
-            const medsData = await requestList(token, medQuery);
+            const medsData = await getMedicineList(medQuery);
 
             res.json({ medicines: medsData });
         }
@@ -31,70 +30,77 @@ router.get('/getMeds', async (req, res) => {
 router.get('/subscribe', async (req, res) => {
     const { user, id, name, pil, spc } = req.query;
     const collectionName = "users";
-    let token, pilDoc, spcDoc, newPIL, newSPC;
-
+    let pilDoc, spcDoc, newPIL, newSPC, pilSize, spcSize;
 
     try {
+        // If there is a pilPath
         if (pil.length > 0) {
-            token = await requestToken(tokenOptions);
-            pilDoc = await requestDocument(token, encodeURIComponent(pil));
+            console.log(`PIL: ${pil}`);
+            console.log(`Found cached PIL path, grabbing document now...`);
+            pilDoc = await getNewDocument(encodeURIComponent(pil));
         } else {
             pilDoc = '';
         }
-
+        
         if (spc.length > 0) {
-            token = await requestToken(tokenOptions);
-            spcDoc = await requestDocument(token, encodeURIComponent(spc));
+            console.log(`SPC: ${spc}`);
+            console.log(`Found cached SPC path, grabbing document now...`);            
+            spcDoc = await getNewDocument(encodeURIComponent(spc));
         } else {
             spcDoc = '';
         }
 
-        try {
-            const pilSize = estimateFirestoreDocumentSize(pilDoc);
-            const spcSize = estimateFirestoreDocumentSize(spcDoc);
-
-            if (pilSize && spcSize) {
-                newPIL = { doc: pilDoc, cachable: false };
-                newSPC = { doc: spcDoc, cachable: false };
-            } else if (!pilSize && spcSize) {
-                newPIL = { doc: pilDoc, cachable: false };
-                newSPC = { doc: spcDoc, cachable: true };
-            } else if (pilSize && !spcSize) {
-                newPIL = { doc: pilDoc, cachable: true };
-                newSPC = { doc: spcDoc, cachable: false };
-            } else {
-                newPIL = { doc: pilDoc, cachable: true };
-                newSPC = { doc: spcDoc, cachable: true };
-            }
-
-            let data = {
-                id: id,
-                name: name,
-                pil: newPIL,
-                spc: newSPC
-            };
-
-            // TODO: Handle Error when there are two PIL documents
-            // Panadol Actifast has two
-            console.log(`New PIL:`, pilDoc);
-
-            // Use arrayUnion to add 'data' to the 'medicines' array field of the document.
-            // If 'medicines' doesn't exist, it will be created.
-            // If 'data' already exists in the 'medicines' array, it won't be added again (to prevent duplicates).
-            await firestore.collection(collectionName).doc(user).update({
-                medicines: admin.firestore.FieldValue.arrayUnion(data)
-            });
-
-            // Optionally, fetch the updated document to confirm or send back the updated array
-            let documentSnapshot = await firestore.collection(collectionName).doc(user).get();
-            const documentData = documentSnapshot.data();
-            
-            // Responding with the updated medicines array
-            res.json({ medicines: documentData.medicines });
-
-        } catch (error) {
-            console.error(error);
+        // If pilDoc is !== '', check the size
+        if (pilDoc !== '') {
+            pilSize = estimateFirestoreDocumentSize(pilDoc);            
+        } 
+        // If spcDoc is !== '', check the size
+        else if (spcDoc !== '') {
+            spcSize = estimateFirestoreDocumentSize(spcDoc);
         }
+
+        // If true, then it's not cachable
+        if (pilSize && spcSize) {
+            newPIL = { doc: '', cachable: false };
+            newSPC = { doc: '', cachable: false };
+        } else if (!pilSize && spcSize) {
+            newPIL = { doc: pilDoc, cachable: true };
+            newSPC = { doc: '', cachable: false };
+        } else if (pilSize && !spcSize) {
+            newPIL = { doc: '', cachable: false };
+            newSPC = { doc: spcDoc, cachable: true };
+        } else {
+            newPIL = { doc: pilDoc, cachable: true };
+            newSPC = { doc: spcDoc, cachable: true };
+        }
+
+        let data = {
+            id: id,
+            name: name,
+            pil: newPIL,
+            spc: newSPC
+        };
+
+        // TODO: Handle Error when there are two PIL documents
+        // Panadol Actifast has two
+        console.log(`New PIL:`, pilDoc);
+        console.log(`New SPC:`, spcDoc);
+
+        // Use arrayUnion to add 'data' to the 'medicines' array field of the document.
+        // If 'medicines' doesn't exist, it will be created.
+        // If 'data' already exists in the 'medicines' array, it won't be added again (to prevent duplicates).
+        await firestore.collection(collectionName).doc(user).update({
+            medicines: admin.firestore.FieldValue.arrayUnion(data)
+        });
+
+        // Optionally, fetch the updated document to confirm or send back the updated array
+        let documentSnapshot = await firestore.collection(collectionName).doc(user).get();
+        const documentData = documentSnapshot.data();
+        
+        // Responding with the updated medicines array
+        res.json({ medicines: documentData.medicines });
+
+
 
     } catch (error) {
         console.error("An error occured: ", error);
