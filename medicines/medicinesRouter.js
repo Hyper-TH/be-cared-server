@@ -181,6 +181,7 @@ router.get('/unSub', async (req, res) => {
     const { user, id } = req.query; 
     const collectionName = "users";
 
+    console.log(`Unsub called by ${user} with medicine: ${id}`);
     try {
         // Fetch the current user's document to check existing medicines
         const userDoc = await firestore.collection(collectionName).doc(user).get();
