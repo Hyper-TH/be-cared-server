@@ -189,6 +189,7 @@ const weeklyCacheSPC = async () => {
 */
 
 // Method to check if user is up to date
+// TODO: Clean code
 export const notifications = async (medicines) => {
     let count;
     let subscriptions = [];
@@ -199,10 +200,9 @@ export const notifications = async (medicines) => {
         const cachedMedicine = await firestore.collection("medicines").doc(medicine.id).get();
         const cachedMedData = cachedMedicine.data();
 
-        let subMed = {};
         let pil, spc;
         
-        // CONDITION: If there is a PIL
+        // CONDITION: If there is a PIL path from medicines collection
         if (cachedMedData.pilPath !== '') {
             console.log(`Pil path found: `, cachedMedData.pilPath);
             const cachedPath = cachedMedData.pilPath; 
@@ -232,12 +232,15 @@ export const notifications = async (medicines) => {
 
             // CONDITION : If user has no PIL 
             else {
+
+                // CONDITION: There is cachedPath
                 if (cachedPath !== '') {
                     const cachedFiles = await firestore.collection("files").doc(cachedPath).get();
                     const cachedDoc = cachedFiles.data();
                     
                     console.log(cachedDoc);
 
+                    // If there is a cached Doc
                     if (cachedDoc) {
                         pil = {
                             path: cachedPath,
@@ -245,53 +248,42 @@ export const notifications = async (medicines) => {
                             available: true
                         };
 
+                        count = count + 1;
+
                     } else {
                         pil = {
                             path: cachedPath,
                             doc: '',
                             available: true
                         };
+
+                        count = count + 1;
                     }
 
                 } else {
                     pil = {
-                        path: cachedPath,
+                        path: '',
                         doc: '',
                         available: false
                     };
                 }
 
-
-                count = count + 1;
             }
             
         } 
         
-        // CONDITION: If there is no PIL
+        // CONDITION: If there is no PIL path from medicines collection
         else {
-            const cachedPath = cachedMedData.pilPath; 
             console.log(`No available PIL`);
 
-            if (cachedPath !== '') {
-                const cachedFiles = await firestore.collection("files").doc(cachedPath).get();
-                const cachedDoc = cachedFiles.data();
-
-                pil = {
-                    path: cachedPath,
-                    doc: cachedDoc,
-                    available: true
-                };
-
-            } else {
-                pil = {
-                    path: cachedPath,
-                    doc: '',
-                    available: false
-                };
-            }
+            pil = {
+                path: '',
+                doc: '',
+                available: false
+            };
         }
         
-        // CONDITION: If there is a SPC
+        // CONDITION: If there is a SPC path from medicines collection
         if (cachedMedData.spcPath !== '') {
             const cachedPath = cachedMedData.spcPath; 
             console.log(`SPC path found: `, cachedPath);
@@ -305,11 +297,10 @@ export const notifications = async (medicines) => {
                 if (isEqual) { 
                     console.log(`No new updates`);
                 } else {
-                    console.log(`New update for SPC`);
+                    console.log(`New update for PIL`);
                     count = count + 1;
                 }
 
-                // TODO: Update when user clicks on renderButton
                 spc = {
                     path: cachedPath,
                     doc: cachedDoc,
@@ -319,13 +310,16 @@ export const notifications = async (medicines) => {
             } 
 
             // CONDITION : If user has no SPC 
-            else {
+           else {
+
+                // CONDITION: There is cachedPath
                 if (cachedPath !== '') {
                     const cachedFiles = await firestore.collection("files").doc(cachedPath).get();
                     const cachedDoc = cachedFiles.data();
                     
                     console.log(cachedDoc);
 
+                    // If there is a cached Doc
                     if (cachedDoc) {
                         spc = {
                             path: cachedPath,
@@ -333,66 +327,49 @@ export const notifications = async (medicines) => {
                             available: true
                         };
 
+                        count = count + 1;
+
                     } else {
                         spc = {
                             path: cachedPath,
                             doc: '',
                             available: true
                         };
+
+                        count = count + 1;
                     }
 
                 } else {
                     spc = {
-                        path: cachedPath,
+                        path: '',
                         doc: '',
                         available: false
                     };
                 }
 
-                count = count + 1;
             }
             
-        } else {
-            const cachedPath = cachedMedData.spcPath; 
+        } 
+
+        // CONDITION: If there is no SPC path from medicines collection
+        else {
             console.log(`No available SPC`);
 
-            if (cachedPath !== '') {
-                const cachedFiles = await firestore.collection("files").doc(cachedPath).get();
-                const cachedDoc = cachedFiles.data();
-
-                if (cachedDoc.doc) {
-                    spc = {
-                        path: cachedPath,
-                        doc: cachedDoc,
-                        available: true
-                    };
-                } else {
-                    spc = {
-                        path: cachedPath,
-                        doc: '',
-                        available: true
-                    };
-                }
-
-            } else {
-                spc = {
-                    path: cachedPath,
-                    doc: '',
-                    available: false
-                };
-            }
+            spc = {
+                path: '',
+                doc: '',
+                available: false
+            };
         }
-        
-        subMed = {
+
+        subscriptions.push({
             medicineID: medicine.id,
             medicineName: medicine.name,
             company: cachedMedData.company, 
             activeIngredient: cachedMedData.activeIngredient, 
             pil: pil,
-            spc: spc        
-        }
-
-        subscriptions.push(subMed);
+            spc: spc   
+        });
 
         // TODO: how will the user get updated? Perhaps update when they redirect!
     };

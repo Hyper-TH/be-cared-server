@@ -50,13 +50,21 @@ router.get('/subscribe', async (req, res) => {
             spcDoc = '';
         }
 
+        console.log(`PIL Length: `, pilDoc.length);
+        console.log(`SPC Length: `, spcDoc.length);
+
         // If pilDoc is !== '', check the size
-        if (pilDoc !== '') {
+        if (pilDoc.length != 0) {
             pilSize = estimateFirestoreDocumentSize(pilDoc);            
-        } 
+        } else {
+            pilSize = true;
+        }
+
         // If spcDoc is !== '', check the size
-        else if (spcDoc !== '') {
+        if (spcDoc.length != 0) {
             spcSize = estimateFirestoreDocumentSize(spcDoc);
+        } else {
+            spcSize = true;
         }
 
         // If true, then it's not cachable
@@ -74,13 +82,14 @@ router.get('/subscribe', async (req, res) => {
             newSPC = { doc: spcDoc, cachable: true };
         }
 
+
         let data = {
             id: id,
             name: name,
             pil: newPIL,
             spc: newSPC
         };
-
+        
         // TODO: Handle Error when there are two PIL documents
         // Panadol Actifast has two
         console.log(`New PIL:`, pilDoc);
@@ -138,6 +147,7 @@ router.get('/checkSub', async (req, res) => {
     }
 });
 
+// TODO: IF NO PIL, CACHABLE MUST BE FALSE (its returning true)
 // Endpoint to get list of subscribed medicines
 router.get('/getSubs', async (req, res) => {
     const { user } = req.query; 
