@@ -200,13 +200,13 @@ export const notifications = async (medicines) => {
         const cachedMedData = cachedMedicine.data();
 
         let subMed = {};
-        let pil;
-        let spc;
+        let pil, spc;
         
         // CONDITION: If there is a PIL
         if (cachedMedData.pilPath !== '') {
+            console.log(`Pil path found: `, cachedMedData.pilPath);
             const cachedPath = cachedMedData.pilPath; 
-            const cachedFiles = await firestore.collection("files").doc(cachedPath).get();
+            const cachedFiles = await firestore.collection("files").doc(cachedMedData.pilPath).get();
             const cachedDoc = cachedFiles.data();
             
             console.log(cachedDoc);
@@ -232,17 +232,27 @@ export const notifications = async (medicines) => {
 
             // CONDITION : If user has no PIL 
             else {
-                const cachedPath = cachedMedData.pilPath; 
-
                 if (cachedPath !== '') {
                     const cachedFiles = await firestore.collection("files").doc(cachedPath).get();
                     const cachedDoc = cachedFiles.data();
-    
-                    pil = {
-                        path: cachedPath,
-                        doc: cachedDoc,
-                        available: true
-                    };
+                    
+                    console.log(cachedDoc);
+
+                    if (cachedDoc) {
+                        pil = {
+                            path: cachedPath,
+                            doc: cachedDoc,
+                            available: true
+                        };
+
+                    } else {
+                        pil = {
+                            path: cachedPath,
+                            doc: '',
+                            available: true
+                        };
+                    }
+
                 } else {
                     pil = {
                         path: cachedPath,
@@ -284,6 +294,7 @@ export const notifications = async (medicines) => {
         // CONDITION: If there is a SPC
         if (cachedMedData.spcPath !== '') {
             const cachedPath = cachedMedData.spcPath; 
+            console.log(`SPC path found: `, cachedPath);
             const cachedFiles = await firestore.collection("files").doc(cachedPath).get();
             const cachedDoc = cachedFiles.data();
 
@@ -294,7 +305,7 @@ export const notifications = async (medicines) => {
                 if (isEqual) { 
                     console.log(`No new updates`);
                 } else {
-                    console.log(`New update for PIL`);
+                    console.log(`New update for SPC`);
                     count = count + 1;
                 }
 
@@ -309,15 +320,34 @@ export const notifications = async (medicines) => {
 
             // CONDITION : If user has no SPC 
             else {
-                const cachedPath = cachedMedData.spcPath; 
-                const cachedFiles = await firestore.collection("files").doc(cachedPath).get();
-                const cachedDoc = cachedFiles.data();
+                if (cachedPath !== '') {
+                    const cachedFiles = await firestore.collection("files").doc(cachedPath).get();
+                    const cachedDoc = cachedFiles.data();
+                    
+                    console.log(cachedDoc);
 
-                pil = {
-                    path: cachedPath,
-                    doc: cachedDoc,
-                    available: true
-                };
+                    if (cachedDoc) {
+                        spc = {
+                            path: cachedPath,
+                            doc: cachedDoc,
+                            available: true
+                        };
+
+                    } else {
+                        spc = {
+                            path: cachedPath,
+                            doc: '',
+                            available: true
+                        };
+                    }
+
+                } else {
+                    spc = {
+                        path: cachedPath,
+                        doc: '',
+                        available: false
+                    };
+                }
 
                 count = count + 1;
             }
@@ -330,14 +360,22 @@ export const notifications = async (medicines) => {
                 const cachedFiles = await firestore.collection("files").doc(cachedPath).get();
                 const cachedDoc = cachedFiles.data();
 
-                pil = {
-                    path: cachedPath,
-                    doc: cachedDoc,
-                    available: true
-                };
+                if (cachedDoc.doc) {
+                    spc = {
+                        path: cachedPath,
+                        doc: cachedDoc,
+                        available: true
+                    };
+                } else {
+                    spc = {
+                        path: cachedPath,
+                        doc: '',
+                        available: true
+                    };
+                }
 
             } else {
-                pil = {
+                spc = {
                     path: cachedPath,
                     doc: '',
                     available: false

@@ -126,7 +126,7 @@ export async function requestDocument(token, uploadPath) {
                     // This event indicates that the response has been completely received.
                     const pdfBuffer = Buffer.concat(pdfChunks);
                     // console.log(pdfBuffer.toString('utf-8'));
-                    
+                        
                     resolve({ status: 200, pdfBuffer: pdfBuffer});                
                 });
             } else {
