@@ -3,6 +3,7 @@ import admin from 'firebase-admin';
 import { firestore } from '../config/config.js';
 import { notifications } from './cache/cacheMethods.js';
 import { estimateFirestoreDocumentSize } from './cache/util/estimateFirestoreDocumentSize.js';
+import { compareBuffer } from './cache/util/compareBuffer.js';
 import { getNewDocument } from './cache/util/getNewDocument.js';
 import { getMedicineList } from './cache/util/getMedicineList.js';
 
@@ -184,6 +185,107 @@ router.get('/getSubs', async (req, res) => {
         console.error("An error occurred: ", error);
         return res.status(500).send("An error occurred while processing your request.");
     }
+});
+
+// Endpoint to update user when they've opened the PDF
+router.get('/updateUser', async (req, res) => {
+    const { user, id, type } = req.query;
+
+    console.log(`User ${user} now checking for medicine ${id}`);
+    const path = type + "Path";
+
+    console.log(`Path:`, path);
+    const userDoc = await firestore.collection("users").doc(user).get();
+    const userData = userDoc.data();
+    const userMedicines = userData.medicines || [];
+
+    console.log("User medicines", userMedicines);
+
+    const index = userMedicines.findIndex(medicine => medicine.id === id);
+    console.log(`Found index: ${index}`);
+    
+    if (index >= 0) {
+        console.log(`Found user's medicine to check for updates`);
+        
+        // Get the path in the medicines collection using ID
+        const medsDoc = await firestore.collection("medicines").doc(id).get();
+        const medsData = medsDoc.data();
+        console.log(`MedsData:`, medsData);
+
+        const cachedPath = medsData[type + "Path"];
+
+        console.log(`Cached path:`, cachedPath);
+
+        // Get the cached doc using that path
+        const filesDoc = await firestore.collection("files").doc(cachedPath).get();
+        const filesData = filesDoc.data();
+
+        // If there is a cached doc 
+        if (filesData) {
+            const cachedDoc = filesData.doc;
+
+            // Grab the document from the user's side
+            const medData = userData.medicines[index];
+    
+            // If user has a cached doc:
+            if (medData.type.doc) {
+                
+                const isEqual = compareBuffer(medData.type.doc, cachedDoc);
+    
+                // If they're not equal, update the user's
+                if (!isEqual) {
+                    const updatedMedicines = [...userData.medicines];
+    
+                    if (updatedMedicines[index].type) {
+                        updatedMedicines[index].type.doc = cachedDoc;
+                    } else {
+                        // Handle case where pil object might not exist
+                        updatedMedicines[index].type = { doc: cachedDoc };
+                    }
+                    
+                    // Prepare the update object for Firestore
+                    const updateObject = {};
+                    updateObject[`medicines.${index}.${path}.doc`] = cachedDoc;
+                    
+                    // Update the document in Firestore
+                    await firestore.collection("users").doc(user).update(updateObject);
+    
+                    console.log(`User's ${type} doc has been updated`);
+                } else {
+                    console.log(`No new updates for user's ${type} doc`);
+                }
+            } 
+            
+            // If user has no cached doc
+            else {
+                const updatedMedicines = [...userData.medicines];
+    
+                if (updatedMedicines[index].type) {
+                    updatedMedicines[index].type.doc = cachedDoc;
+                } else {
+                    // Handle case where pil object might not exist
+                    updatedMedicines[index].type = { doc: cachedDoc };
+                }
+                
+                // Prepare the update object for Firestore
+                const updateObject = {};
+                updateObject[`medicines.${index}.pil.doc`] = cachedDoc;
+                
+                // Update the document in Firestore
+                await firestore.collection("users").doc(user).update(updateObject);
+    
+                console.log(`User's ${type} doc has been updated`);
+            }
+        } else {
+            console.log(`No found cached file`);
+        }
+        
+    } else {
+        console.log(`Medicine not found`);
+    }
+
+    console.log(`Exiting /updateUser`);
+    res.json({ status : 200 });
 });
 
 // Endpoint to unsub the medicine TODO: Fix this
