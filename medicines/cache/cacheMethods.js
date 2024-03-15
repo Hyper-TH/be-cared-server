@@ -190,8 +190,9 @@ const weeklyCacheSPC = async () => {
 
 // Method to check if user is up to date
 // TODO: Clean code
+// TODO: Add another bool value before counting whether medicine has new document or not
 export const notifications = async (medicines) => {
-    let count;
+    let count = 0;
     let subscriptions = [];
 
     // Iterate through each medicine object
@@ -213,28 +214,41 @@ export const notifications = async (medicines) => {
 
             // CONDITION: If user has a PIL
             if (medicine.pil.doc !== '') {
+                console.log(`User has cached PIL`);
+
                 let isEqual = compareBuffer(medicine.pil.doc, cachedDoc.doc);
                         
                 if (isEqual) { 
                     console.log(`No new updates`);
+
+                    pil = {
+                        path: cachedPath,
+                        doc: cachedDoc,
+                        available: true,
+                        notifications: false
+                    };
+
                 } else {
                     console.log(`New update for PIL`);
-                    count = count + 1;
+                    pil = {
+                        path: cachedPath,
+                        doc: cachedDoc,
+                        available: true,
+                        notifications: true
+                    };
+
+                    console.log(`Added count`);
+                    count++;
                 }
-
-                pil = {
-                    path: cachedPath,
-                    doc: cachedDoc,
-                    available: true
-                };
-
             } 
 
             // CONDITION : If user has no PIL 
             else {
+                console.log(`User has no cached PIL`);
 
                 // CONDITION: There is cachedPath
                 if (cachedPath !== '') {
+                    console.log(`Cached path found for PIL`);
                     const cachedFiles = await firestore.collection("files").doc(cachedPath).get();
                     const cachedDoc = cachedFiles.data();
                     
@@ -245,22 +259,25 @@ export const notifications = async (medicines) => {
                         pil = {
                             path: cachedPath,
                             doc: cachedDoc,
-                            available: true
+                            available: true,
+                            notifications: true
                         };
 
-                        count = count + 1;
+                        console.log(`Added count`);
+                        count++;
 
                     } else {
                         pil = {
                             path: cachedPath,
                             doc: '',
-                            available: true
+                            available: true,
+                            notifications: false
                         };
 
-                        count = count + 1;
                     }
 
                 } else {
+                    console.log(`No cached path found`);
                     pil = {
                         path: '',
                         doc: '',
@@ -279,7 +296,8 @@ export const notifications = async (medicines) => {
             pil = {
                 path: '',
                 doc: '',
-                available: false
+                available: false,
+                notifications: false,
             };
         }
         
@@ -292,58 +310,74 @@ export const notifications = async (medicines) => {
 
             // CONDITION: If user has a SPC
             if (medicine.spc.doc !== '') {
+                console.log(`User has cached SPC`);
                 let isEqual = compareBuffer(medicine.spc.doc, cachedDoc.doc);
                         
                 if (isEqual) { 
                     console.log(`No new updates`);
+
+                    spc = {
+                        path: cachedPath,
+                        doc: cachedDoc,
+                        available: true,
+                        notifications: false
+                    };
+
                 } else {
                     console.log(`New update for PIL`);
-                    count = count + 1;
+                    spc = {
+                        path: cachedPath,
+                        doc: cachedDoc,
+                        available: true,
+                        notifications: true
+                    };
+
+                    console.log(`Added count`);
+                    count++;
                 }
-
-                spc = {
-                    path: cachedPath,
-                    doc: cachedDoc,
-                    available: true
-                };
-
             } 
 
             // CONDITION : If user has no SPC 
            else {
+                console.log(`User has no cached SPC`);
 
                 // CONDITION: There is cachedPath
                 if (cachedPath !== '') {
+                    console.log(`Cached path for SPC found`);
+
                     const cachedFiles = await firestore.collection("files").doc(cachedPath).get();
                     const cachedDoc = cachedFiles.data();
                     
-                    console.log(cachedDoc);
-
                     // If there is a cached Doc
                     if (cachedDoc) {
                         spc = {
                             path: cachedPath,
                             doc: cachedDoc,
-                            available: true
+                            available: true,
+                            notifications: true
                         };
 
-                        count = count + 1;
+                        console.log(`Added count`);
+                        count++;
 
                     } else {
                         spc = {
                             path: cachedPath,
                             doc: '',
-                            available: true
+                            available: true,
+                            notifications: false
                         };
 
-                        count = count + 1;
                     }
 
                 } else {
+                    console.log(`No cached path for SPC found`);
+
                     spc = {
                         path: '',
                         doc: '',
-                        available: false
+                        available: false,
+                        notifications: false
                     };
                 }
 
@@ -358,7 +392,8 @@ export const notifications = async (medicines) => {
             spc = {
                 path: '',
                 doc: '',
-                available: false
+                available: false,
+                notifications: false
             };
         }
 
@@ -371,10 +406,10 @@ export const notifications = async (medicines) => {
             spc: spc   
         });
 
-        // TODO: how will the user get updated? Perhaps update when they redirect!
     };
 
-    console.log(subscriptions);
+    // console.log(subscriptions);
+    console.log(`Count:`, count);
 
     return [ subscriptions, count ];
 };
