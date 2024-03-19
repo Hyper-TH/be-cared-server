@@ -115,9 +115,9 @@ export async function drugParser(html) {
         }).map(function() {
             return $(this).text().trim();
         }).get().join(' '); // Joining paragraph texts with a space, you can adjust this
-        
+
         // For actual_description, assuming we're getting content from every p tag in ".interactions-row"
-        let actualDescriptions = $(this).find('.interactions-row p').map(function() {
+        let actualDescriptions = $(this).find('div[class*="truncate-overflow"] p').map(function() {
             return $(this).text().trim();
         }).get().join(' '); // Joining paragraph texts with a space, you can adjust this
 
