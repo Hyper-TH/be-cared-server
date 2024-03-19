@@ -90,13 +90,13 @@ export async function drugParser(html) {
     const $ = cheerio.load(html);
 
     let results = [];
+    let references = [];
     let id = 0;
 
     if ($('.results').find('h2').text().trim() == 'No Interactions Found') {
         console.log(`No interactions found!`);
     } else {
         $('.interactions-box').each(function () {
-        let references = {};
         id += 1;
         let subject = $(this).find('.interactions-col.subject').text().trim();
         subject = subject.split("button=")[0];
@@ -130,7 +130,7 @@ export async function drugParser(html) {
             referenceText = referenceText.replace(/\[\]/g, '');
 
             if (referenceText) {
-                references[index + 1] = referenceText;
+                references.push(referenceText);
             }
 
         });
