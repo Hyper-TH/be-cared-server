@@ -175,7 +175,6 @@ router.get('/getSubs', async (req, res) => {
 
         // Check if the medicines array exists in the document to avoid undefined errors
         if (medicines.length > 0) {
-
             const [ subList, count ] = await notifications(medicines);
 
             console.log(subList);

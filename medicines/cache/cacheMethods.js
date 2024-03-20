@@ -385,7 +385,7 @@ export const notifications = async (medicines) => {
             
         } 
 
-        // CONDITION: If there is no SPC path from medicines collection
+        // CONDITION: If there is no SPC path from medicines collection 
         else {
             console.log(`No available SPC`);
 
@@ -401,7 +401,7 @@ export const notifications = async (medicines) => {
             medicineID: medicine.id,
             medicineName: medicine.name,
             company: cachedMedData.company, 
-            activeIngredient: cachedMedData.activeIngredient, 
+            activeIngredients: cachedMedData.activeIngredients, 
             pil: pil,
             spc: spc   
         });
