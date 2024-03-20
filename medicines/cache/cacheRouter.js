@@ -9,7 +9,7 @@ const router = express.Router();
 // Endpoint to cache medicine
 router.get('/cacheMed', async (req, res) => {
     try {
-        const { id, name, activeIngredient, company, status, pil, spc } = req.query;
+        const { id, name, ingredients, company, status, pil, spc } = req.query;
         console.log("ID:", id);
 
         const pilPath = pil.replace(/ /g, "_");
@@ -18,6 +18,11 @@ router.get('/cacheMed', async (req, res) => {
         const documentID = id.toString();
         const collectionName = "medicines";
 
+        const activeIngredients = ingredients
+            .filter(ingredient => ingredient.active === "true")
+            .map(ingredient => ingredient.name);
+
+
         let documentSnapshot = await firestore.collection(collectionName).doc(documentID).get();
 
         if (!documentSnapshot.exists) {
@@ -25,7 +30,7 @@ router.get('/cacheMed', async (req, res) => {
 
             const data = {
                 name: name,
-                activeIngredient: activeIngredient,
+                activeIngredients: activeIngredients,
                 company: company,
                 status: status,
                 pilPath: pilPath,

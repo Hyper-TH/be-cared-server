@@ -29,9 +29,15 @@ router.get('/getMeds', async (req, res) => {
 
 // Endpoint to subscribe the medicine
 router.get('/subscribe', async (req, res) => {
-    const { user, id, name, pil, spc } = req.query;
+    const { user, id, name, ingredients, pil, spc } = req.query;
     const collectionName = "users";
     let pilDoc, spcDoc, newPIL, newSPC, pilSize, spcSize;
+
+
+    const activeIngredients = ingredients
+        .filter(ingredient => ingredient.active === "true")
+        .map(ingredient => ingredient.name);
+
 
     try {
         // If there is a pilPath
@@ -87,6 +93,7 @@ router.get('/subscribe', async (req, res) => {
         let data = {
             id: id,
             name: name,
+            activeIngredients: activeIngredients,
             pil: newPIL,
             spc: newSPC
         };
