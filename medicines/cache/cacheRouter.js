@@ -12,8 +12,8 @@ router.get('/cacheMed', async (req, res) => {
         const { id, name, ingredients, company, status, pil, spc } = req.query;
         console.log("ID:", id);
 
-        const pilPath = pil.replace(/ /g, "_");
-        const spcPath = spc.replace(/ /g, "_");
+        const pilPath = pil.replace(/ /g, "%20");
+        const spcPath = spc.replace(/ /g, "%20");
 
         const documentID = id.toString();
         const collectionName = "medicines";
@@ -65,7 +65,7 @@ router.get('/grabCache', async (req, res) => {
     console.log(uploadPath);
 
     // Replace space with _ for firestore
-    const documentID = uploadPath.replace(/ /g, "_");
+    const documentID = uploadPath.replace(/ /g, "%20");
     console.log(documentID);
 
     const collectionName = "files"; 
@@ -116,9 +116,8 @@ router.get('/cacheDoc', async (req, res) => {
 
     const { pil, spc } = req.query;
 
-    // Replace space with _ for firestore
-    const pilPath = pil.replace(/ /g, "_");
-    const spcPath = spc.replace(/ /g, "_");
+    const pilPath = pil.replace(/ /g, "%20");
+    const spcPath = spc.replace(/ /g, "%20");
     let pilSnapshot;
     let spcSnapshot;
 
@@ -133,7 +132,7 @@ router.get('/cacheDoc', async (req, res) => {
             } else {
                 // If it does not, cache this to the server!
                 console.log(`Caching to server with new documentID: ${pilPath}`);
-                const document = await getNewDocument(encodeURIComponent(pilPath));
+                const document = await getNewDocument(pilPath);
                 
                 const docSize = estimateFirestoreDocumentSize(document);
 
@@ -158,7 +157,7 @@ router.get('/cacheDoc', async (req, res) => {
             } else {
                 // If it does not, cache this to the server!
                 console.log(`Caching to server with new documentID: ${spcPath}`);
-                const document = await getNewDocument(encodeURIComponent(spcPath));
+                const document = await getNewDocument(spcPath);
                 
                 const docSize = estimateFirestoreDocumentSize(document);
 

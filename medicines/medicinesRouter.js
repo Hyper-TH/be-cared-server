@@ -33,6 +33,8 @@ router.get('/subscribe', async (req, res) => {
     const collectionName = "users";
     let pilDoc, spcDoc, newPIL, newSPC, pilSize, spcSize;
 
+    const pilPath = pil.replace(/ /g, "%20");
+    const spcPath = spc.replace(/ /g, "%20");
 
     const activeIngredients = ingredients
         .filter(ingredient => ingredient.active === "true")
@@ -44,7 +46,7 @@ router.get('/subscribe', async (req, res) => {
         if (pil.length > 0) {
             console.log(`PIL: ${pil}`);
             console.log(`Found cached PIL path, grabbing document now...`);
-            pilDoc = await getNewDocument(encodeURIComponent(pil));
+            pilDoc = await getNewDocument(pilPath);
         } else {
             pilDoc = '';
         }
@@ -52,7 +54,7 @@ router.get('/subscribe', async (req, res) => {
         if (spc.length > 0) {
             console.log(`SPC: ${spc}`);
             console.log(`Found cached SPC path, grabbing document now...`);            
-            spcDoc = await getNewDocument(encodeURIComponent(spc));
+            spcDoc = await getNewDocument(spcPath);
         } else {
             spcDoc = '';
         }
@@ -64,14 +66,14 @@ router.get('/subscribe', async (req, res) => {
         if (pilDoc.length != 0) {
             pilSize = estimateFirestoreDocumentSize(pilDoc);            
         } else {
-            pilSize = true;
+            pilSize = false;
         }
 
         // If spcDoc is !== '', check the size
         if (spcDoc.length != 0) {
             spcSize = estimateFirestoreDocumentSize(spcDoc);
         } else {
-            spcSize = true;
+            spcSize = false;
         }
 
         // If true, then it's not cachable
@@ -230,23 +232,28 @@ router.get('/updateUser', async (req, res) => {
         if (filesData) {
             const cachedDoc = filesData.doc;
 
+            console.log(`Got doc: `, cachedDoc);
+
             // Grab the document from the user's side
-            const medData = userData.medicines[index];
-    
+            const medData = userData.medicines;
+            
+            console.log(typeof(type));
+
+
             // If user has a cached doc:
-            if (medData.type.doc) {
+            if (medData[index][type].doc) {
                 
-                const isEqual = compareBuffer(medData.type.doc, cachedDoc);
+                const isEqual = compareBuffer(medData[index][type].doc, cachedDoc);
     
                 // If they're not equal, update the user's
                 if (!isEqual) {
                     const updatedMedicines = [...userData.medicines];
     
-                    if (updatedMedicines[index].type) {
-                        updatedMedicines[index].type.doc = cachedDoc;
+                    if (updatedMedicines[index][type]) {
+                        updatedMedicines[index][type].doc = cachedDoc;
                     } else {
                         // Handle case where pil object might not exist
-                        updatedMedicines[index].type = { doc: cachedDoc };
+                        updatedMedicines[index][type] = { doc: cachedDoc };
                     }
                     
                     // Prepare the update object for Firestore
@@ -266,11 +273,11 @@ router.get('/updateUser', async (req, res) => {
             else {
                 const updatedMedicines = [...userData.medicines];
     
-                if (updatedMedicines[index].type) {
-                    updatedMedicines[index].type.doc = cachedDoc;
+                if (updatedMedicines[index][type]) {
+                    updatedMedicines[index][type].doc = cachedDoc;
                 } else {
                     // Handle case where pil object might not exist
-                    updatedMedicines[index].type = { doc: cachedDoc };
+                    updatedMedicines[index][type] = { doc: cachedDoc };
                 }
                 
                 // Prepare the update object for Firestore
