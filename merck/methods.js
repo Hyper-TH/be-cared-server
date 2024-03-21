@@ -25,7 +25,7 @@ export async function requestList(cookie, prodQuery, type) {
 	// Turn to all lower case and replace space with '-' for first instance of the prodQuery
     const option = {
         host: "www.sigmaaldrich.com",
-        path: `${process.env.LOCALPATH}/${encodeURIComponent((prodQuery.toLowerCase()).replace(/ /g, '-'))}?focus=products&page=1&perpage=30&sort=relevance&term=${encodeURIComponent(prodQuery)}&type=product_${type}`,
+        path: `${process.env.LOCALPATH}/${encodeURIComponent((prodQuery.toLowerCase().trim()).replace(/ /g, '-'))}?focus=products&page=1&perpage=30&sort=relevance&term=${encodeURIComponent(prodQuery)}&type=product_${type}`,
         headers: {
             accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
 			accept_language: "en-US,en;q=0.9",
