@@ -107,6 +107,7 @@ export async function productDetailsParser(html, uploadPath) {
 	const $ = cheerio.load(html);
 	let product = {};
 	let productDetails = {};
+	let productSubDetails = {};
 	let productProperties = {};
 	
 	let productName = $('span#product-name').text().trim();
@@ -146,7 +147,7 @@ export async function productDetailsParser(html, uploadPath) {
 
 			    let value = $(this).find('[class="MuiGrid-root MuiGrid-item"]').last().text().trim();
 
-				productDetails[key] = value;
+				productSubDetails[key] = value;
 			}) 				
 		};
 	});
@@ -171,6 +172,7 @@ export async function productDetailsParser(html, uploadPath) {
 		id: uploadPath,
 		productName: productName,
 		productDescription: productDescription,
+		productSubDetails: productSubDetails,
 		productDetails: productDetails,
 		productProperties: productProperties
 	};
