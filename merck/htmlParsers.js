@@ -120,18 +120,23 @@ export async function productDetailsParser(html, uploadPath) {
 		// Get the class attribute of the current div
 		const classAttr = $(this).attr('class');
 
-		// Check if this div's class ends with "MuiTypography-caption"
-		if (classAttr && classAttr.endsWith('[class=$"MuiTypography-caption"]')) {
+		if (classAttr && classAttr.endsWith("MuiTypography-caption")) {
+			console.log(`Entered main class`);
 
-			// Add condition, if the next one is 'MuiTypography-body1' then append it
-			if ($(this).next('[class=$"MuiTypography-body1]"')) {
+			// if the next div class ends on a classname MuiTypography-body1, then do this:
+			if ($(this).next().hasClass("MuiTypography-body1")) {
+				console.log(`Entered top details`);
+		
 				let key = $(this).text().trim();
-	
 				let value = $(this).next().text().trim();
-	
+		
+				// Assuming productDetails is an object where you want to store the key-value pairs
 				productDetails[key] = value;
+		
+				console.log(`Key: ${key}, Value: ${value}`);
 			}
 		} 
+
 		// Entered Product Details container
 		else if (classAttr && classAttr.endsWith('MuiGrid-container')) {
 			$(this)
@@ -161,7 +166,7 @@ export async function productDetailsParser(html, uploadPath) {
 
 		productProperties[key] = value;
 	});
-
+	
 	product = {
 		id: uploadPath,
 		productName: productName,
