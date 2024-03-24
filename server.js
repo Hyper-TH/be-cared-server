@@ -61,7 +61,7 @@ app.get('/login', async (req, res) => {
         if (filteredData.length === 0) {
             console.log(`User is not in the database`);
             const data = {
-                medicines: [],
+                medicines: {},
                 type: "standard"
             }
 

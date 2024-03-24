@@ -27,7 +27,7 @@ router.get('/getMeds', async (req, res) => {
     }
 });
 
-// Endpoint to subscribe the medicine
+// Endpoint to subscribe to the medicine
 router.get('/subscribe', async (req, res) => {
     const { user, id, name, ingredients, pil, spc } = req.query;
     const collectionName = "users";
@@ -37,30 +37,23 @@ router.get('/subscribe', async (req, res) => {
     const spcPath = spc.replace(/ /g, "%20");
 
     const activeIngredients = ingredients
-        .filter(ingredient => ingredient.active === "true")
-        .map(ingredient => ingredient.name);
-
+    .filter(ingredient => ingredient.active === "true")
+    .map(ingredient => ingredient.name);
 
     try {
-        // If there is a pilPath
+        // Handling PIL document
         if (pil.length > 0) {
-            console.log(`PIL: ${pil}`);
-            console.log(`Found cached PIL path, grabbing document now...`);
             pilDoc = await getNewDocument(pilPath);
         } else {
             pilDoc = '';
         }
-        
+
+        // Handling SPC document
         if (spc.length > 0) {
-            console.log(`SPC: ${spc}`);
-            console.log(`Found cached SPC path, grabbing document now...`);            
             spcDoc = await getNewDocument(spcPath);
         } else {
             spcDoc = '';
         }
-
-        console.log(`PIL Length: `, pilDoc.length);
-        console.log(`SPC Length: `, spcDoc.length);
 
         // If pilDoc is !== '', check the size
         if (pilDoc.length != 0) {
@@ -91,40 +84,43 @@ router.get('/subscribe', async (req, res) => {
             newSPC = { doc: spcDoc, cachable: true };
         }
 
-
         let data = {
-            id: id,
-            name: name,
-            activeIngredients: activeIngredients,
-            pil: newPIL,
-            spc: newSPC
+            [id]: { // Use the medicine ID as the key for direct access
+                name: name,
+                activeIngredients: activeIngredients,
+                pil: newPIL,
+                spc: newSPC
+            }
         };
-        
-        // TODO: Handle Error when there are two PIL documents
-        // Panadol Actifast has two
-        console.log(`New PIL:`, pilDoc);
-        console.log(`New SPC:`, spcDoc);
 
-        // Use arrayUnion to add 'data' to the 'medicines' array field of the document.
-        // If 'medicines' doesn't exist, it will be created.
-        // If 'data' already exists in the 'medicines' array, it won't be added again (to prevent duplicates).
-        await firestore.collection(collectionName).doc(user).update({
-            medicines: admin.firestore.FieldValue.arrayUnion(data)
-        });
+        // Check if the 'medicines' field exists and update or set the specific medicine data
+        const userRef = firestore.collection(collectionName).doc(user);
+        const docSnapshot = await userRef.get();
 
-        // Optionally, fetch the updated document to confirm or send back the updated array
-        let documentSnapshot = await firestore.collection(collectionName).doc(user).get();
-        const documentData = documentSnapshot.data();
-        
-        // Responding with the updated medicines array
-        res.json({ medicines: documentData.medicines });
+        if (docSnapshot.exists) {
+            // If the document exists, update the specific medicine entry
+            await userRef.update({
+                [`medicines.${id}`]: data[id] // Update the specific medicine by its ID
+            });
+        } else {
+            // If the document does not exist, initialize 'medicines' with the current medicine data
+            await userRef.set({
+                medicines: data
+            });
+        }
 
+        // Optionally, fetch the updated document to confirm or send back the updated data
+        const updatedDocSnapshot = await userRef.get();
+        const updatedDocumentData = updatedDocSnapshot.data();
 
+        // Responding with the updated medicine data
+        res.json({ medicine: updatedDocumentData.medicines[id] });
 
     } catch (error) {
-        console.error("An error occured: ", error);
+        console.error("An error occurred: ", error);
     }
 });
+
 
 // Endpoint to check if user has subscribed to the medicine
 router.get('/checkSub', async (req, res) => {
@@ -140,10 +136,10 @@ router.get('/checkSub', async (req, res) => {
         }
 
         const userData = userDoc.data();
-        const existingMedicines = userData.medicines || [];
+        const existingMedicines = userData.medicines || {};
         
         // Check if the medicine with the given name already exists
-        const medicineExists = existingMedicines.some(medicine => medicine.id === id);
+        const medicineExists = existingMedicines.hasOwnProperty(id);
         
         if (medicineExists) {
             return res.json({ exists: true, message: "Medicine already exists in the user's medicines array." });
@@ -176,7 +172,7 @@ router.get('/getSubs', async (req, res) => {
         const medicines = documentData.medicines;
 
         // Check if the medicines array exists in the document to avoid undefined errors
-        if (medicines.length > 0) {
+        if (medicines && Object.keys(medicines).length > 0) {
             const [ subList, count ] = await notifications(medicines);
 
             console.log(subList);
@@ -249,19 +245,29 @@ router.get('/updateUser', async (req, res) => {
                 if (!isEqual) {
                     const updatedMedicines = [...userData.medicines];
     
-                    if (updatedMedicines[index][type]) {
-                        updatedMedicines[index][type].doc = cachedDoc;
-                    } else {
-                        // Handle case where pil object might not exist
-                        updatedMedicines[index][type] = { doc: cachedDoc };
-                    }
+                    // if (updatedMedicines[index][type]) {
+                        // updatedMedicines[index][type].doc = cachedDoc;
+
+                        // Found the medicine, prepare to update
+                        const fieldToUpdate = `medicines.${index}.${type}.doc`;
+                        const updateObject = {};
+                        updateObject[fieldToUpdate] = cachedDoc;
+
+                        // Perform the update
+                        await firestore.collection("users").doc(user).update(updateObject);
+
+                    // } else {
+                    //     // Handle case where object might not exist
+                    //     updatedMedicines[index][type] = { doc: cachedDoc };
+                    // }
                     
-                    // Prepare the update object for Firestore
-                    const updateObject = {};
-                    updateObject[`medicines.${index}.${path}.doc`] = cachedDoc;
                     
-                    // Update the document in Firestore
-                    await firestore.collection("users").doc(user).update(updateObject);
+                    // // Prepare the update object for Firestore
+                    // const updateObject = {};
+                    // updateObject[`medicines.${index}.${path}.doc`] = cachedDoc;
+                    
+                    // // Update the document in Firestore
+                    // await firestore.collection("users").doc(user).update(updateObject);
     
                     console.log(`User's ${type} doc has been updated`);
                 } else {
@@ -312,23 +318,26 @@ router.get('/unSub', async (req, res) => {
         const userDoc = await firestore.collection(collectionName).doc(user).get();
         const documentData = userDoc.data();
 
-        // Check if the medicines array exists in the document to avoid undefined errors
-        if (documentData.medicines) {
+        // Check if the medicines object exists in the document to avoid undefined errors
+        if (documentData.medicines && documentData.medicines[id]) {
 
-            // Filter the array to exclude the medicine with the specified name
-            const updatedMedicines = documentData.medicines.filter(medicine => medicine.id !== id);
+            // Clone the existing medicines object
+            let updatedMedicines = { ...documentData.medicines };
 
-            // Update the document with the filtered medicines array
+            // Delete the medicine with the specified ID
+            delete updatedMedicines[id];
+
+            // Update the document with the updated medicines object
             await firestore.collection(collectionName).doc(user).update({
                 medicines: updatedMedicines
             });
             
-            // Responding with the new medicines array
+            // Responding with the updated medicines object
             res.json({ medicines: updatedMedicines });
 
         } else {
-            // If the medicines array does not exist, respond with an empty array
-            res.json({ medicines: [] });
+            // If the medicines object does not exist or the specified medicine ID is not found, respond accordingly
+            res.status(404).json({ error: "Medicine not found or medicines object does not exist." });
         }
                 
     } catch (error) {

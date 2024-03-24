@@ -195,10 +195,12 @@ export const notifications = async (medicines) => {
     let count = 0;
     let subscriptions = [];
 
+    const medicineEntries = Object.entries(medicines);
+
     // Iterate through each medicine object
-    for (const medicine of medicines) {
-        console.log(`Processing: ${medicine.id}`);
-        const cachedMedicine = await firestore.collection("medicines").doc(medicine.id).get();
+    for (const [id, medicineData] of medicineEntries) {
+        console.log(`Processing: ${id}`);
+        const cachedMedicine = await firestore.collection("medicines").doc(id).get();
         const cachedMedData = cachedMedicine.data();
 
         let pil, spc;
@@ -213,10 +215,10 @@ export const notifications = async (medicines) => {
             console.log(cachedDoc);
 
             // CONDITION: If user has a PIL
-            if (medicine.pil.doc !== '') {
+            if (medicineData.pil.doc !== '') {
                 console.log(`User has cached PIL`);
 
-                let isEqual = compareBuffer(medicine.pil.doc, cachedDoc.doc);
+                let isEqual = compareBuffer(medicineData.pil.doc, cachedDoc.doc);
                         
                 if (isEqual) { 
                     console.log(`No new updates`);
@@ -309,9 +311,10 @@ export const notifications = async (medicines) => {
             const cachedDoc = cachedFiles.data();
 
             // CONDITION: If user has a SPC
-            if (medicine.spc.doc !== '') {
+            if (medicineData.spc.doc !== '') {
                 console.log(`User has cached SPC`);
-                let isEqual = compareBuffer(medicine.spc.doc, cachedDoc.doc);
+
+                let isEqual = compareBuffer(medicineData.spc.doc, cachedDoc.doc);
                         
                 if (isEqual) { 
                     console.log(`No new updates`);
@@ -398,8 +401,8 @@ export const notifications = async (medicines) => {
         }
 
         subscriptions.push({
-            medicineID: medicine.id,
-            medicineName: medicine.name,
+            medicineID: id,
+            medicineName: medicineData.name,
             company: cachedMedData.company, 
             activeIngredients: cachedMedData.activeIngredients, 
             pil: pil,
