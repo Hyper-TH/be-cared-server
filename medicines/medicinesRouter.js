@@ -150,6 +150,7 @@ router.get('/checkSub', async (req, res) => {
     } catch (error) {
         console.error("An error occurred: ", error);
         return res.status(500).send("An error occurred while processing your request.");
+        
     }
 });
 
@@ -199,16 +200,24 @@ router.get('/updateUser', async (req, res) => {
     const path = type + "Path";
 
     console.log(`Path:`, path);
+    const userDocRef = firestore.collection("users").doc(user);
     const userDoc = await firestore.collection("users").doc(user).get();
     const userData = userDoc.data();
-    const userMedicines = userData.medicines || [];
+    const userMedicines = userData.medicines || {};
 
     console.log("User medicines", userMedicines);
+    const medicineExists = userMedicines.hasOwnProperty(id);
 
-    const index = userMedicines.findIndex(medicine => medicine.id === id);
-    console.log(`Found index: ${index}`);
     
-    if (index >= 0) {
+    // TODO: Use this logic:
+    // 
+    /*
+        const userDocRef = firestore.collection('users').doc('userID');
+        await userDocRef.update({
+        'medicines.medicine1.pil': 'Updated PIL data'
+        });
+    */
+    if (medicineExists) {
         console.log(`Found user's medicine to check for updates`);
         
         // Get the path in the medicines collection using ID
@@ -233,43 +242,25 @@ router.get('/updateUser', async (req, res) => {
             // Grab the document from the user's side
             const medData = userData.medicines;
             
-            console.log(typeof(type));
-
-
             // If user has a cached doc:
-            if (medData[index][type].doc) {
+            if (medData[id][type].doc) {
                 
-                const isEqual = compareBuffer(medData[index][type].doc, cachedDoc);
+                const isEqual = compareBuffer(medData[id][type].doc, cachedDoc);
     
                 // If they're not equal, update the user's
                 if (!isEqual) {
-                    const updatedMedicines = [...userData.medicines];
     
-                    // if (updatedMedicines[index][type]) {
-                        // updatedMedicines[index][type].doc = cachedDoc;
+                    const docPath = `medicines.${id}.${type}.doc`;
 
-                        // Found the medicine, prepare to update
-                        const fieldToUpdate = `medicines.${index}.${type}.doc`;
-                        const updateObject = {};
-                        updateObject[fieldToUpdate] = cachedDoc;
+                    const updateObject = {};
+                    updateObject[docPath] = cachedDoc; // Use computed property names to set the dynamic key
+                    
+                    await userDocRef.update(updateObject)
+                        .then(() => console.log("Document successfully updated"))
+                        .catch((error) => console.error("Error updating document: ", error));
 
-                        // Perform the update
-                        await firestore.collection("users").doc(user).update(updateObject);
-
-                    // } else {
-                    //     // Handle case where object might not exist
-                    //     updatedMedicines[index][type] = { doc: cachedDoc };
-                    // }
-                    
-                    
-                    // // Prepare the update object for Firestore
-                    // const updateObject = {};
-                    // updateObject[`medicines.${index}.${path}.doc`] = cachedDoc;
-                    
-                    // // Update the document in Firestore
-                    // await firestore.collection("users").doc(user).update(updateObject);
-    
                     console.log(`User's ${type} doc has been updated`);
+
                 } else {
                     console.log(`No new updates for user's ${type} doc`);
                 }
