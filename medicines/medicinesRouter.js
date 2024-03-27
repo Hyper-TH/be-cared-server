@@ -162,11 +162,8 @@ router.get('/getSubs', async (req, res) => {
 // Endpoint to update user when they've opened the PDF
 router.get('/updateUser', async (req, res) => {
     const { user, id, type } = req.query;
-
     console.log(`User ${user} now checking for medicine ${id}`);
-    const path = type + "Path";
 
-    console.log(`Path:`, path);
     const userDocRef = firestore.collection("users").doc(user);
     const userDoc = await firestore.collection("users").doc(user).get();
     const userData = userDoc.data();
@@ -174,7 +171,6 @@ router.get('/updateUser', async (req, res) => {
 
     console.log("User medicines", userMedicines);
     const medicineExists = userMedicines.hasOwnProperty(id);
-
     
     if (medicineExists) {
         console.log(`Found user's medicine to check for updates`);
@@ -182,8 +178,6 @@ router.get('/updateUser', async (req, res) => {
         // Get the path in the medicines collection using ID
         const medsDoc = await firestore.collection("medicines").doc(id).get();
         const medsData = medsDoc.data();
-        console.log(`MedsData:`, medsData);
-
         const cachedPath = medsData[type + "Path"];
 
         console.log(`Cached path:`, cachedPath);
@@ -228,7 +222,7 @@ router.get('/updateUser', async (req, res) => {
             // If user has no cached doc
             else {
                 const updatedMedicines = [...userData.medicines];
-    
+
                 if (updatedMedicines[index][type]) {
                     updatedMedicines[index][type].doc = cachedDoc;
                 } else {
@@ -257,12 +251,13 @@ router.get('/updateUser', async (req, res) => {
     res.json({ status : 200 });
 });
 
-// Endpoint to unsub the medicine TODO: Fix this
+// Endpoint to unsub the medicine
 router.get('/unSub', async (req, res) => {
     const { user, id } = req.query; 
     const collectionName = "users";
 
     console.log(`Unsub called by ${user} with medicine: ${id}`);
+    
     try {
         // Fetch the current user's document to check existing medicines
         const userDoc = await firestore.collection(collectionName).doc(user).get();
