@@ -5,6 +5,9 @@ import { estimateFirestoreDocumentSize } from './cache/util/estimateFirestoreDoc
 import { compareBuffer } from './cache/util/compareBuffer.js';
 import { getNewDocument } from './cache/util/getNewDocument.js';
 import { getMedicineList } from './cache/util/getMedicineList.js';
+import { getUserMeds } from './cache/util/getUserMeds.js';
+import { getCachedPath } from './cache/util/getCachedPath.js';
+import { getCachedDoc } from './cache/util/getCachedDoc.js';
 
 const router = express.Router();
 
@@ -89,7 +92,6 @@ router.get('/subscribe', async (req, res) => {
     }
 });
 
-
 // Endpoint to check if user has subscribed to the medicine
 router.get('/checkSub', async (req, res) => {
     try {
@@ -103,11 +105,8 @@ router.get('/checkSub', async (req, res) => {
             return res.status(404).send("User not found.");
         }
 
-        const userData = userDoc.data();
-        const existingMedicines = userData.medicines || {};
-        
-        // Check if the medicine with the given name already exists
-        const medicineExists = existingMedicines.hasOwnProperty(id);
+        const userMedicines = await getUserMeds(user);
+        const medicineExists = userMedicines.hasOwnProperty(id);
         
         if (medicineExists) {
             return res.json({ exists: true, message: "Medicine already exists in the user's medicines array." });
@@ -165,40 +164,29 @@ router.get('/updateUser', async (req, res) => {
     console.log(`User ${user} now checking for medicine ${id}`);
 
     const userDocRef = firestore.collection("users").doc(user);
-    const userDoc = await firestore.collection("users").doc(user).get();
-    const userData = userDoc.data();
-    const userMedicines = userData.medicines || {};
-
-    console.log("User medicines", userMedicines);
+    const userMedicines = await getUserMeds(user);
     const medicineExists = userMedicines.hasOwnProperty(id);
     
+    // If user is subbed to that medicine
     if (medicineExists) {
         console.log(`Found user's medicine to check for updates`);
         
         // Get the path in the medicines collection using ID
-        const medsDoc = await firestore.collection("medicines").doc(id).get();
-        const medsData = medsDoc.data();
-        const cachedPath = medsData[type + "Path"];
+        const cachedPath = await getCachedPath(type, id);
 
         console.log(`Cached path:`, cachedPath);
 
         // Get the cached doc using that path
-        const filesDoc = await firestore.collection("files").doc(cachedPath).get();
-        const filesData = filesDoc.data();
+        const cachedFile = await getCachedDoc(cachedPath);
 
         // If there is a cached doc 
-        if (filesData) {
-            const cachedDoc = filesData.doc;
-
-            console.log(`Got doc: `, cachedDoc);
-
-            // Grab the document from the user's side
-            const medData = userData.medicines;
+        if (cachedFile) {
+            const cachedDoc = cachedFile.doc;
             
             // If user has a cached doc:
-            if (medData[id][type].doc) {
+            if (userMedicines[id][type].doc) {
                 
-                const isEqual = compareBuffer(medData[id][type].doc, cachedDoc);
+                const isEqual = compareBuffer(userMedicines[id][type].doc, cachedDoc);
     
                 // If they're not equal, update the user's
                 if (!isEqual) {
@@ -232,7 +220,7 @@ router.get('/updateUser', async (req, res) => {
                 
                 // Prepare the update object for Firestore
                 const updateObject = {};
-                updateObject[`medicines.${index}.pil.doc`] = cachedDoc;
+                updateObject[`medicines.${index}.${type}.doc`] = cachedDoc;
                 
                 // Update the document in Firestore
                 await firestore.collection("users").doc(user).update(updateObject);
