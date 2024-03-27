@@ -18,6 +18,7 @@ import {
 } from './conditions.js';
 import { getNewMedsData } from './util/getNewMedsData.js';
 import { compareBuffer } from './util/compareBuffer.js';
+import { getCachedDoc } from './util/getCachedDoc.js'
 
 // Method to cache PIL every week
 const weeklyCachePIL = async () => {
@@ -164,32 +165,7 @@ const weeklyCacheSPC = async () => {
     console.log("Job Ended");
 };  
 
- /*
-    subscriptions: [
-        {
-            medicineID,
-            medicineName,
-            company,
-            activeIngredient,
-            pil: {
-                path,
-                doc: _bytestring,
-                available: BOOL
-            },
-            spc: {
-                path,
-                doc: _bytestring,
-                available: BOOL
-            }
-        },
-        {
-
-        }
-    ]
-*/
-
 // Method to check if user is up to date
-// TODO: Clean code
 export const notifications = async (medicines) => {
     let count = 0;
     let subscriptions = [];
@@ -206,13 +182,11 @@ export const notifications = async (medicines) => {
         
         // CONDITION: If there is a PIL path from medicines collection
         if (cachedMedData.pilPath !== '') {
-            console.log(`Pil path found: `, cachedMedData.pilPath);
             const cachedPath = cachedMedData.pilPath; 
-            const cachedFiles = await firestore.collection("files").doc(cachedMedData.pilPath).get();
-            const cachedDoc = cachedFiles.data();
-            
-            console.log(cachedDoc);
 
+            console.log(`Pil path found: `, cachedPath);
+            const cachedDoc = await getCachedDoc(cachedPath);
+            
             // CONDITION: If user has a PIL
             if (medicineData.pil.doc !== '') {
                 console.log(`User has cached PIL`);
@@ -238,7 +212,6 @@ export const notifications = async (medicines) => {
                         notifications: true
                     };
 
-                    console.log(`Added count`);
                     count++;
                 }
             } 
@@ -250,10 +223,7 @@ export const notifications = async (medicines) => {
                 // CONDITION: There is cachedPath
                 if (cachedPath !== '') {
                     console.log(`Cached path found for PIL`);
-                    const cachedFiles = await firestore.collection("files").doc(cachedPath).get();
-                    const cachedDoc = cachedFiles.data();
-                    
-                    console.log(cachedDoc);
+                    const cachedDoc = await getCachedDoc(cachedPath).get();
 
                     // If there is a cached Doc
                     if (cachedDoc) {
@@ -264,7 +234,6 @@ export const notifications = async (medicines) => {
                             notifications: true
                         };
 
-                        console.log(`Added count`);
                         count++;
 
                     } else {
@@ -274,7 +243,6 @@ export const notifications = async (medicines) => {
                             available: true,
                             notifications: false
                         };
-
                     }
 
                 } else {
@@ -305,9 +273,9 @@ export const notifications = async (medicines) => {
         // CONDITION: If there is a SPC path from medicines collection
         if (cachedMedData.spcPath !== '') {
             const cachedPath = cachedMedData.spcPath; 
+
             console.log(`SPC path found: `, cachedPath);
-            const cachedFiles = await firestore.collection("files").doc(cachedPath).get();
-            const cachedDoc = cachedFiles.data();
+            const cachedDoc = await getCachedDoc(cachedPath);
 
             // CONDITION: If user has a SPC
             if (medicineData.spc.doc !== '') {
@@ -347,8 +315,7 @@ export const notifications = async (medicines) => {
                 if (cachedPath !== '') {
                     console.log(`Cached path for SPC found`);
 
-                    const cachedFiles = await firestore.collection("files").doc(cachedPath).get();
-                    const cachedDoc = cachedFiles.data();
+                    const cachedDoc = await getCachedDoc(cachedPath);
                     
                     // If there is a cached Doc
                     if (cachedDoc) {
@@ -359,7 +326,6 @@ export const notifications = async (medicines) => {
                             notifications: true
                         };
 
-                        console.log(`Added count`);
                         count++;
 
                     } else {
@@ -409,9 +375,6 @@ export const notifications = async (medicines) => {
         });
 
     };
-
-    // console.log(subscriptions);
-    console.log(`Count:`, count);
 
     return [ subscriptions, count ];
 };
