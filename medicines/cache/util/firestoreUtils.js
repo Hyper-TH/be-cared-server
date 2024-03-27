@@ -1,4 +1,5 @@
 import { firestore } from "../../../config/config.js";
+import { getMedicineList } from "./httpUtils.js";
 
 // Method to get user's subscription list of medicines
 export const getUserMeds = async (user) => {
@@ -13,8 +14,7 @@ export const getUserMeds = async (user) => {
 export const getNewMedsData = async (medicineID, medicineName) => {
 
     // Get the first result of searchList
-    const token = await requestToken(tokenOptions);
-    const medsList = await requestList(token, medicineName);
+    const medsList = await getMedicineList(medicineName);
 
     // Initialize x to 0 to start from the first index of medsData.entities
     let x = 0;
@@ -25,7 +25,7 @@ export const getNewMedsData = async (medicineID, medicineName) => {
         if ((medsList.entities[x].id).toString() === medicineID) {
             // If a match is found, log the matching entity and set found to true
             console.log(`Match found:`);
-            // console.log(`${medsData.entities[x].name} == ${medicineName}`);
+            console.log(`${medsData.entities[x].name} == ${medicineName}`);
 
             found = true;
         } else {
