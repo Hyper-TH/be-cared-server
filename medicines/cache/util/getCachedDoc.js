@@ -7,4 +7,4 @@ export const getCachedDoc = async (path) => {
     const cachedDoc = cachedFile.data();
 
     return cachedDoc;
-}
+};

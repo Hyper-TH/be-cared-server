@@ -1,8 +1,7 @@
 import express from 'express';
-import admin from 'firebase-admin';
 import { firestore } from '../../config/config.js';
 import { estimateFirestoreDocumentSize } from './util/estimateFirestoreDocumentSize.js';
-import { getNewDocument } from './util/getNewDocument.js';
+import { getNewDocument } from './util/httpUtils.js';
 
 const router = express.Router();
 

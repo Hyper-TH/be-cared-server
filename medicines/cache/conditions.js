@@ -9,6 +9,7 @@ export const equalPath = async (cachedPath, newPath) => {
 
     // Call requestDocument() with new path 
     // The cached path has replaced spaces with '%20'
+    // TODO: use the http Utils
     const token = await requestToken(tokenOptions);
     const newDoc = await requestDocument(token, encodeURIComponent(newPath));                      
 

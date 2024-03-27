@@ -16,9 +16,8 @@ import {
     equalPath, unequalDocuments, uncachedPath, 
     unequalPaths, outdatedCache, unavailableMed 
 } from './conditions.js';
-import { getNewMedsData } from './util/getNewMedsData.js';
+import { getNewMedsData, getCachedDoc } from './util/firestoreUtils.js';
 import { compareBuffer } from './util/compareBuffer.js';
-import { getCachedDoc } from './util/getCachedDoc.js'
 
 // Method to cache PIL every week
 const weeklyCachePIL = async () => {

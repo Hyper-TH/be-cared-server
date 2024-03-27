@@ -3,11 +3,8 @@ import { firestore } from '../config/config.js';
 import { notifications } from './cache/cacheMethods.js';
 import { estimateFirestoreDocumentSize } from './cache/util/estimateFirestoreDocumentSize.js';
 import { compareBuffer } from './cache/util/compareBuffer.js';
-import { getNewDocument } from './cache/util/getNewDocument.js';
-import { getMedicineList } from './cache/util/getMedicineList.js';
-import { getUserMeds } from './cache/util/getUserMeds.js';
-import { getCachedPath } from './cache/util/getCachedPath.js';
-import { getCachedDoc } from './cache/util/getCachedDoc.js';
+import { getUserMeds, getCachedPath, getCachedDoc } from './cache/util/firestoreUtils.js';
+import { getNewDocument, getMedicineList } from './cache/util/httpUtils.js';
 
 const router = express.Router();
 
