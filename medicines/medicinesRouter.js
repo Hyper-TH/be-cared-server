@@ -1,5 +1,4 @@
 import express from 'express';
-import admin from 'firebase-admin';
 import { firestore } from '../config/config.js';
 import { notifications } from './cache/cacheMethods.js';
 import { estimateFirestoreDocumentSize } from './cache/util/estimateFirestoreDocumentSize.js';
@@ -31,60 +30,55 @@ router.get('/getMeds', async (req, res) => {
 router.get('/subscribe', async (req, res) => {
     const { user, id, name, ingredients, pil, spc } = req.query;
     const collectionName = "users";
-    let pilDoc, spcDoc, newPIL, newSPC, pilSize, spcSize;
+    let newPIL, newSPC;
 
     const pilPath = pil.replace(/ /g, "%20");
     const spcPath = spc.replace(/ /g, "%20");
 
     const activeIngredients = ingredients
-    .filter(ingredient => ingredient.active === "true")
-    .map(ingredient => ingredient.name);
+        .filter(ingredient => ingredient.active === "true")
+        .map(ingredient => ingredient.name);
 
     try {
-        // Handling PIL document
-        if (pil.length > 0) {
-            pilDoc = await getNewDocument(pilPath);
-        } else {
-            pilDoc = '';
-        }
+        // Handling documents, if there is a pilPath then get doc otherise none
+        const pilDoc = pil.length > 0 ? await getNewDocument(pilPath) : '';
+        const spcDoc = spc.length > 0 ? await getNewDocument(spcPath) : '';
 
-        // Handling SPC document
-        if (spc.length > 0) {
-            spcDoc = await getNewDocument(spcPath);
-        } else {
-            spcDoc = '';
-        }
-
-        // If pilDoc is !== '', check the size
-        if (pilDoc.length != 0) {
-            pilSize = estimateFirestoreDocumentSize(pilDoc);            
-        } else {
-            pilSize = false;
-        }
-
-        // If spcDoc is !== '', check the size
-        if (spcDoc.length != 0) {
-            spcSize = estimateFirestoreDocumentSize(spcDoc);
-        } else {
-            spcSize = false;
-        }
+        // If doc !== '', check the size
+        // If it returns true, it's not cachable
+        const pilSize = pilDoc.length != 0 ? estimateFirestoreDocumentSize(pilDoc) : true;
+        const spcSize = spcDoc.length != 0 ? estimateFirestoreDocumentSize(spcDoc) : true;
 
         // If true, then it's not cachable
+        // newPIL = { doc: pilSize ? '' : pilDoc, cachable: !pilSize };
+        // newSPC = { doc: spcSize ? '' : spcDoc, cachable: !spcSize };
+
+        // if both are true then they're not cachable
         if (pilSize && spcSize) {
             newPIL = { doc: '', cachable: false };
             newSPC = { doc: '', cachable: false };
-        } else if (!pilSize && spcSize) {
+        } 
+        
+        // Entering here even if there isn't a document
+        // pil is cachable and spc isn't
+        else if (!pilSize && spcSize) {
             newPIL = { doc: pilDoc, cachable: true };
             newSPC = { doc: '', cachable: false };
-        } else if (pilSize && !spcSize) {
+        } 
+        
+        // pil isn't cachable and spc is
+        else if (pilSize && !spcSize) {
             newPIL = { doc: '', cachable: false };
             newSPC = { doc: spcDoc, cachable: true };
-        } else {
+        } 
+        
+        // both are cachable
+        else {
             newPIL = { doc: pilDoc, cachable: true };
             newSPC = { doc: spcDoc, cachable: true };
         }
 
-        let data = {
+        const data = {
             [id]: { // Use the medicine ID as the key for direct access
                 name: name,
                 activeIngredients: activeIngredients,
