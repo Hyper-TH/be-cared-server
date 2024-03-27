@@ -30,7 +30,6 @@ router.get('/getMeds', async (req, res) => {
 router.get('/subscribe', async (req, res) => {
     const { user, id, name, ingredients, pil, spc } = req.query;
     const collectionName = "users";
-    let newPIL, newSPC;
 
     const pilPath = pil.replace(/ /g, "%20");
     const spcPath = spc.replace(/ /g, "%20");
@@ -50,33 +49,8 @@ router.get('/subscribe', async (req, res) => {
         const spcSize = spcDoc.length != 0 ? estimateFirestoreDocumentSize(spcDoc) : true;
 
         // If true, then it's not cachable
-        // newPIL = { doc: pilSize ? '' : pilDoc, cachable: !pilSize };
-        // newSPC = { doc: spcSize ? '' : spcDoc, cachable: !spcSize };
-
-        // if both are true then they're not cachable
-        if (pilSize && spcSize) {
-            newPIL = { doc: '', cachable: false };
-            newSPC = { doc: '', cachable: false };
-        } 
-        
-        // Entering here even if there isn't a document
-        // pil is cachable and spc isn't
-        else if (!pilSize && spcSize) {
-            newPIL = { doc: pilDoc, cachable: true };
-            newSPC = { doc: '', cachable: false };
-        } 
-        
-        // pil isn't cachable and spc is
-        else if (pilSize && !spcSize) {
-            newPIL = { doc: '', cachable: false };
-            newSPC = { doc: spcDoc, cachable: true };
-        } 
-        
-        // both are cachable
-        else {
-            newPIL = { doc: pilDoc, cachable: true };
-            newSPC = { doc: spcDoc, cachable: true };
-        }
+        const newPIL = { doc: pilSize ? '' : pilDoc, cachable: !pilSize };
+        const newSPC = { doc: spcSize ? '' : spcDoc, cachable: !spcSize };
 
         const data = {
             [id]: { // Use the medicine ID as the key for direct access
