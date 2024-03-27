@@ -46,7 +46,6 @@ export async function requestList(cookie, prodQuery, type) {
 		body: null
     };
 
-	// TODO: Handle correctly if no results are found
     return new Promise((resolve, reject) => {
         https.get(option, (response) => {
 			console.log(response.statusCode); // Logs the HTTP status code
@@ -99,7 +98,6 @@ export async function requestProductDetails(uploadPath) {
 		body: null
 	};
 
-	// TODO: Handle correctly if no results are found
 	return new Promise((resolve, reject) => {
 		https.get(options, (response) => {
 			console.log(response.statusCode); // Logs the HTTP status code

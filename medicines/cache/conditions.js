@@ -150,5 +150,4 @@ export const unavailableMed = async (medicineID) => {
 
     console.log(`Removed cached medicines`);
 
-    // TODO: If medicine is not cached, give warning to users collection
 };

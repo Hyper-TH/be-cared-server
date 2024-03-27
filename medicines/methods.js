@@ -83,8 +83,6 @@ export async function requestList(token, search) {
 };
 
 // Method to request SPC/PIL
-// TODO: This now returns status code 404 if there are no documents available
-// TODO: Perhaps all requestDocument calls are now in a single function instead!
 export async function requestDocument(token, uploadPath) {
 
     console.log("Upload path: ", uploadPath);

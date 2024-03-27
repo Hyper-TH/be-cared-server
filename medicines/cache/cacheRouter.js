@@ -182,7 +182,4 @@ router.get('/cacheDoc', async (req, res) => {
     res.json({ status : 200});
 });
 
-// TODO: Check user's current documents and see if it's the same as files
-// Note: if the document is not present, that means it's either not cached OR the new file is bigger than the limit
-
 export default router;

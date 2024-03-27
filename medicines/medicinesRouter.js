@@ -154,7 +154,6 @@ router.get('/checkSub', async (req, res) => {
     }
 });
 
-// TODO: IF NO PIL, CACHABLE MUST BE FALSE (its returning true)
 // Endpoint to get list of subscribed medicines
 router.get('/getSubs', async (req, res) => {
     const { user } = req.query; 
@@ -209,14 +208,6 @@ router.get('/updateUser', async (req, res) => {
     const medicineExists = userMedicines.hasOwnProperty(id);
 
     
-    // TODO: Use this logic:
-    // 
-    /*
-        const userDocRef = firestore.collection('users').doc('userID');
-        await userDocRef.update({
-        'medicines.medicine1.pil': 'Updated PIL data'
-        });
-    */
     if (medicineExists) {
         console.log(`Found user's medicine to check for updates`);
         

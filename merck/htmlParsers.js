@@ -1,6 +1,5 @@
 import cheerio from 'cheerio';
 
-// TODO: Make this code shorter/more efficient (can we combine them?)
 // Method to parse html of search results
 export async function productListParser(html, type) {
     /*
@@ -60,7 +59,6 @@ export async function productListParser(html, type) {
 			linearFormula = linearFormula && linearFormula.trim() !== '' ? linearFormula : 'N/A';
 			
 			// for each loop for productID here and description 
-			// TODO: Not going to the correct section of divs
 			$(this).find('tr[class*="jss244"]').each(function () {
 				let productID = $(this).find('td[class*="jss248"] a').text().trim();
 				let productDescription = $(this).find('.jss252').text().trim();

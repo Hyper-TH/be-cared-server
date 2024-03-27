@@ -190,7 +190,6 @@ const weeklyCacheSPC = async () => {
 
 // Method to check if user is up to date
 // TODO: Clean code
-// TODO: Add another bool value before counting whether medicine has new document or not
 export const notifications = async (medicines) => {
     let count = 0;
     let subscriptions = [];
