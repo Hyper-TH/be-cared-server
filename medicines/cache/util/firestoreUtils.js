@@ -25,7 +25,7 @@ export const getNewMedsData = async (medicineID, medicineName) => {
         if ((medsList.entities[x].id).toString() === medicineID) {
             // If a match is found, log the matching entity and set found to true
             console.log(`Match found:`);
-            console.log(`${medsData.entities[x].name} == ${medicineName}`);
+            console.log(`${medsList.entities[x].name} == ${medicineName}`);
 
             found = true;
         } else {

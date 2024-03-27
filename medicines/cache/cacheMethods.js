@@ -54,9 +54,11 @@ const weeklyCachePIL = async () => {
 
                     if (decodeURIComponent(cachedPath) === newPath) {
                         let [ newPILDoc, cachedDoc ] = await equalPath(cachedPath, newPath);
-                        
+                        console.log(`newPILDoc: `, newPILDoc);
+                        console.log(`cachedDoc: `, cachedDoc);
+
                         if (cachedDoc) {
-                            let isEqual = compareBuffer(newPILDoc, cachedDoc);
+                            let isEqual = compareBuffer(newPILDoc, cachedDoc.doc);
                             
                             if (isEqual) { 
                                 console.log(`No new updates`); 
@@ -127,7 +129,7 @@ const weeklyCacheSPC = async () => {
                         let [ newSPCDoc, cachedDoc ] = await equalPath(cachedPath, newPath);
                         
                         if (cachedDoc) {
-                            let isEqual = compareBuffer(newSPCDoc, cachedDoc);
+                            let isEqual = compareBuffer(newSPCDoc, cachedDoc.doc);
                             
                             if (isEqual) { 
                                 console.log(`No new updates`); 
@@ -379,12 +381,12 @@ export const notifications = async (medicines) => {
 };
 
 // TODO: Vercel has a setup for cron jobs, establish that
-export const job = new CronJob(
-    '*/20 * * * * *', 
-    weeklyCachePIL, 
-    null, 
-    false,
-    'Europe/London'
-);
+// export const job = new CronJob(
+//     '*/50 * * * * *', 
+//     weeklyCacheSPC, 
+//     null, 
+//     false,
+//     'Europe/London'
+// );
 
 // job.start();
