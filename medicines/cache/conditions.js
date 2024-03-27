@@ -1,23 +1,17 @@
 import { firestore } from '../../config/config.js';
-import { tokenOptions } from '../tokenOptions.js';
-import { requestToken, requestDocument } from '../methods.js';
 import { estimateFirestoreDocumentSize } from './util/estimateFirestoreDocumentSize.js';
+import { getNewDocument } from './util/httpUtils.js';
+import { getCachedDoc } from './util/firestoreUtils.js';
 
 /* CONDITION: cachedPath === newPath  */
 export const equalPath = async (cachedPath, newPath) => {
-    console.log(`${cachedPath} = ${newPath}`);
+    console.log(`${cachedPath} == ${newPath}`);
 
-    // Call requestDocument() with new path 
     // The cached path has replaced spaces with '%20'
-    // TODO: use the http Utils
-    const token = await requestToken(tokenOptions);
-    const newDoc = await requestDocument(token, encodeURIComponent(newPath));                      
-
-    console.log(newDoc);
+    const newDoc = await getNewDocument(encodeURIComponent(newPath));
 
     // Fetch the current document's data
-    const documentSnapshot = await firestore.collection("files").doc(cachedPath).get();
-    const cachedDoc = documentSnapshot.data();
+    const cachedDoc = await getCachedDoc(cachedPath);
 
     return [ newDoc, cachedDoc ];
 };  
@@ -89,8 +83,7 @@ export const unequalPaths = async (cachedPath, newPath, medicineID, path) => {
         [path]: newPath
     });
 
-    const token = await requestToken(tokenOptions);
-    const newDoc = await requestDocument(token, encodeURIComponent(newPath)); 
+    const newDoc = await getNewDocument(encodeURIComponent(newPath));
 
     try {
         const docSize = estimateFirestoreDocumentSize(newDoc);
