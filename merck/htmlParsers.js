@@ -2,81 +2,81 @@ import cheerio from 'cheerio';
 
 // Method to parse html of search results
 export async function productListParser(html, type) {
-    /*
-    {
-		id: '',
-        ProductName: '',
-		linearFormula: '',
-		products: [
-			{
-				id: 0,
-				productID: '',
-				productDescription: '',
-				href: '',
-			}
-		]
-    }
-    */
-
     const $ = cheerio.load(html);
 
     let results = [];
-	let products = [];
-
     let id = 0;
 
 	if (type === 'number') {
 		console.log(`Entered ID section..`);
+		
+		$('div[data-testid="srp-substance-group"]').each(function () {
+			let products = [];
+			let productName = $(this).find('#substance-name').text().trim();
+			
+			// Directly target the desired tr within tbody
+			let targetRow = $('tbody[class*="MuiTableBody-root"]').find('tr').eq(0); 
 
-		// TODO: Monitor the class names as they have changed
-		$('.jss215').each(function () {
-			let productName = $(this).find('.jss217 > h2').text().trim();
-			let linearFormula = $(this).find('.jss225').find('span.jss224').text().trim();	
-			linearFormula = linearFormula && linearFormula.trim() !== '' ? linearFormula : 'N/A';
-			let productID = $(this).find('td[class*="jss248"] a').text().trim();
-			let href = $(this).find('td[class*="jss248"] > a').attr('href');
-			let productDescription = $(this).find('span.jss252').text().trim();
+			// For the targeted tr, find the second and third td
+			let idTD = targetRow.find('td').eq(1); // 2nd td
+			let descTD = targetRow.find('td').eq(2); // 3rd td
+
+			// Within these tds, find the a elements
+			let aElement = idTD.find('a');
+			let bElement = descTD.find('a');
+
+			// Grab the text and href from the a element
+			let productID = aElement.text().trim();
+			let productDescription = bElement.text().trim();
+			let href = aElement.attr('href');
 			id += 1;
 
 			products.push({
 				productID: productID,
 				productDescription: productDescription,
 				href: href
-			});			
-	
+			});		
+
 			results.push({
 				id: id,
-				productName: productName,
-				linearFormula: linearFormula,
-				products
+				products,
+				productName
 			});
 		});
+
+
 	} else {
-		$('.jss215').each(function () {
+		console.log(`Entered name section..`);
+
+		$('div[data-testid="srp-substance-group"]').each(function () {
 			let products = [];
-			let productName = $(this).find('.jss217 > h2').text().trim();
-			let linearFormula = $(this).find('.jss225').find('span.jss224').text().trim();
-			linearFormula = linearFormula && linearFormula.trim() !== '' ? linearFormula : 'N/A';
+			let productName = $(this).find('#substance-name').text().trim();
 			
-			// for each loop for productID here and description 
-			$(this).find('tr[class*="jss244"]').each(function () {
-				let productID = $(this).find('td[class*="jss248"] a').text().trim();
-				let productDescription = $(this).find('.jss252').text().trim();
-				let href = $(this).find('td[class*="jss248"] > a').attr('href');
+			$(this).find('tbody[class*="MuiTableBody-root"]').find('tr').each(function() {
+				// For each tr, find the second td
+				let idTD = $(this).find('td').eq(1);
+				let descTD = $(this).find('td').eq(2);
+				// Within the second td, find the a element
+				let aElement = idTD.find('a');
+				let bElement = descTD.find('a');
+
+				// Grab the text and href from the a element
+				let productID = aElement.text().trim();
+				let productDescription = bElement.text().trim();
+				let href = aElement.attr('href');
+				id += 1;
 
 				products.push({
 					productID: productID,
 					productDescription: productDescription,
 					href: href
-				});			
-	
+				});		
 			});
 
 			results.push({
 				id: id,
 				products,
-				productName,
-				linearFormula: linearFormula
+				productName
 			});
 		});
 	};	
@@ -87,21 +87,7 @@ export async function productListParser(html, type) {
 // Method to parse html of product details page
 export async function productDetailsParser(html, uploadPath) {
 	console.log(`Entered product details parser with ${uploadPath}`);
-	/*
-		JSON TO RETURN:
-		{
-			id: uploadPath,
-			ProductName: '',
-			ProductDescription: '',
-			productDetails: {
-				// LOOP
-			},
-			productProperties: {
-				// LOOP
-			}
-    	}
-	*/
-
+	
 	const $ = cheerio.load(html);
 	let product = {};
 	let productDetails = {};
