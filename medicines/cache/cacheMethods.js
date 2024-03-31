@@ -60,7 +60,7 @@ export const notifications = async (medicines) => {
                 // CONDITION: There is cachedPath
                 if (cachedPath !== '') {
                     console.log(`Cached path found for PIL`);
-                    const cachedDoc = await getCachedDoc(cachedPath).get();
+                    const cachedDoc = await getCachedDoc(cachedPath);
 
                     // If there is a cached Doc
                     if (cachedDoc) {
