@@ -2,17 +2,6 @@ import cheerio from 'cheerio';
 
 // Method to parse html for food interactions
 export async function foodParser(html) {
-    // RAW LOGIC:
-    // for every tr class "success" OR "danger"
-    // if "success" grab div class="pull-right" content
-        // grab a tag content
-        // for every td
-            // grab content
-    // else if "danger"
-        // grab div class="pull-right" > a tag content
-        // grab td content (i.e., No known food interactions)
-
-    // Return as JSON:
     /*
     {
         name: "",
@@ -65,13 +54,6 @@ export async function foodParser(html) {
 
 // Method to parse html for drug interactions
 export async function drugParser(html) {
-    // RAW LOGIC:
-    // for every class="interactions-box"
-    // grab "interactions-col subject"
-    // grab "interactions-col affected"
-    // grab "severity-badge severity-*" // severity-<actual_severity>
-    // grab "interactions-col description" > p
-    // grab "interactions-row" > p
     // Return as JSON:
     /*
         {
