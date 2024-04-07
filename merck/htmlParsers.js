@@ -52,7 +52,7 @@ export async function productListParser(html, type) {
 			let products = [];
 			let productName = $(this).find('#substance-name').text().trim();
 			
-			$(this).find('tbody[class*="MuiTableBody-root"]').find('tr').each(function() {
+			$(this).find('tbody[class*="MuiTableBody-root"]').find('tr:even').each(function() {
 				// For each tr, find the second td
 				let idTD = $(this).find('td').eq(1);
 				let descTD = $(this).find('td').eq(2);
