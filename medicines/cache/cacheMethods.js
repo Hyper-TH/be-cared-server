@@ -95,16 +95,17 @@ export const notifications = async (medicines) => {
             
         } 
         
-        // CONDITION: If there is no PIL path from medicines collection
         else {
             console.log(`No available PIL`);
 
+            // If user has no PIL
             pil = {
                 path: '',
                 doc: '',
-                available: false,
+                available: false,       // Ensure that the button becomes inaccessible
                 notifications: false,
             };
+
         }
         
         // CONDITION: If there is a SPC path from medicines collection

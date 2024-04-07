@@ -39,7 +39,7 @@ router.get('/subscribe', async (req, res) => {
         .map(ingredient => ingredient.name);
 
     try {
-        // Handling documents, if there is a pilPath then get doc otherise none
+        // Handling documents, if there is a path then get doc otherise none
         const pilDoc = pil.length > 0 ? await getNewDocument(pilPath) : '';
         const spcDoc = spc.length > 0 ? await getNewDocument(spcPath) : '';
 

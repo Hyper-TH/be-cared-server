@@ -99,6 +99,7 @@ router.get('/grabCache', async (req, res) => {
             } else {
                 console.log(`File size too large to cache`);
                 
+                // Directly send the pdf back to client without caching
                 res.type('application/pdf').send(data);
             }
 
