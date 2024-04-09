@@ -43,7 +43,7 @@ const weeklyCacheSPC = async () => {
             try {
                 const [ found, medsData ] = await getNewMedsData(medicineID, medicineName);
 
-                if (medsData.activeSPC.file.name) {
+                if (medsData.activeSPC.file) {
 
                     newPath = medsData.activeSPC.file.name;
 
