@@ -1,14 +1,3 @@
-// TODO: READ FLAW HERE 
-/* 
-    In the case scenario where there is no cached document,
-    and there is an updated document, there is (as of this moment)
-    no way of telling if it has been "seen" before or not.
-
-    Additionally, if the new document is new and not cachable,
-    the server will mark this as uncachable, and therefore 
-    the user side will still stay on the outdated document.
-*/
-
 import { firestore } from '../../../config/config.js';
 import { 
     equalPath, unequalDocuments, uncachedPath, 
